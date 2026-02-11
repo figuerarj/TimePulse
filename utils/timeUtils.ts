@@ -16,6 +16,7 @@ export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings, forW
   let startTotal = parseToMinutes(entry.startTime);
   let endTotal = parseToMinutes(entry.endTime);
   
+  // Handle overnight shifts
   if (endTotal < startTotal) {
     endTotal += 1440;
   }
@@ -24,14 +25,36 @@ export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings, forW
     const schedStart = parseToMinutes(entry.isCustomShift ? entry.scheduledStartTime! : settings.defaultStartTime);
     let schedEnd = parseToMinutes(entry.isCustomShift ? entry.scheduledEndTime! : settings.defaultEndTime);
     
+    // Adjust scheduled end if shift spans midnight
     if (schedEnd < schedStart) schedEnd += 1440;
 
-    if (Math.abs(startTotal - schedStart) <= (settings.clockInRoundingMinutes || 0)) {
+    /**
+     * NOVA LÓGICA DE CLOCK-IN (ENTRADA)
+     */
+    if (startTotal < schedStart) {
+      // 3) Entrada antes do horário do shift: ignora e começa no scheduledIn
       startTotal = schedStart;
+    } else if (startTotal >= schedStart) {
+      // 1) Dentro da margem: arredonda para scheduledIn
+      // 2) Fora da margem: mantém real (atraso)
+      if (startTotal - schedStart <= (settings.clockInRoundingMinutes || 0)) {
+        startTotal = schedStart;
+      }
     }
     
-    if (Math.abs(endTotal - schedEnd) <= (settings.clockOutRoundingMinutes || 0)) {
-      endTotal = schedEnd;
+    /**
+     * LÓGICA DE CLOCK-OUT (SAÍDA)
+     */
+    if (endTotal > schedEnd) {
+      // Se saiu depois, mas dentro da margem de saída, arredonda para o fim da escala
+      if (endTotal - schedEnd <= (settings.clockOutRoundingMinutes || 0)) {
+        endTotal = schedEnd;
+      }
+    } else if (endTotal < schedEnd) {
+      // Se saiu antes, mas dentro da margem de saída, arredonda para o fim da escala (abono)
+      if (schedEnd - endTotal <= (settings.clockOutRoundingMinutes || 0)) {
+        endTotal = schedEnd;
+      }
     }
   }
   
@@ -56,6 +79,7 @@ export const calculateOvertimeMinutes = (entry: TimeEntry, settings: AppSettings
   if (realEnd < realStart) realEnd += 1440;
   if (schedEnd < schedStart) schedEnd += 1440;
 
+  // OT is calculated only from time worked AFTER scheduledOut
   const diff = realEnd - schedEnd;
   
   if (diff >= (settings.otThresholdMinutes || 0)) {
@@ -66,10 +90,12 @@ export const calculateOvertimeMinutes = (entry: TimeEntry, settings: AppSettings
 };
 
 export const calculateEarnings = (entry: TimeEntry, settings: AppSettings): number => {
+  // Earnings calculations MUST use rounding rules if enabled
   const totalRoundedHours = calculateWorkHours(entry, settings, true);
   const otMinutes = calculateOvertimeMinutes(entry, settings);
   const otHours = otMinutes / 60;
   
+  // Regular hours = Total rounded duration minus the calculated OT
   const regularHours = Math.max(0, totalRoundedHours - otHours);
   const baseRate = entry.hourlyRate ?? settings.hourlyRate;
   
