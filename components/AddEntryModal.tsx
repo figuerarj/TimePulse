@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { X, Check, Calendar, Clock, FileText, DollarSign, Umbrella, Utensils, Briefcase, Zap, AlertCircle } from 'lucide-react';
+import { X, Check, Calendar, Clock, FileText, DollarSign, Umbrella, Utensils, Briefcase, Zap, AlertCircle, ListChecks } from 'lucide-react';
 import { TimeEntry, AppSettings } from '../types';
 import { getSmartLunchTime, getLocalDateString } from '../utils/timeUtils';
 import { translations } from '../utils/translations';
@@ -24,6 +23,9 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onSave, 
     date: getLocalDateString(),
     startTime: settings.defaultStartTime,
     endTime: settings.defaultEndTime,
+    scheduledStartTime: settings.defaultStartTime,
+    scheduledEndTime: settings.defaultEndTime,
+    isCustomShift: false,
     lunchStart: '12:00',
     lunchEnd: '13:00',
     notes: '',
@@ -39,7 +41,10 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onSave, 
       setFormData({
         ...initialData,
         hourlyRate: initialData.hourlyRate ?? settings.hourlyRate,
-        unpaidBreakMinutes: initialData.unpaidBreakMinutes ?? settings.unpaidBreakMinutes
+        unpaidBreakMinutes: initialData.unpaidBreakMinutes ?? settings.unpaidBreakMinutes,
+        scheduledStartTime: initialData.scheduledStartTime || settings.defaultStartTime,
+        scheduledEndTime: initialData.scheduledEndTime || settings.defaultEndTime,
+        isCustomShift: initialData.isCustomShift || false
       });
     } else {
         const smartLunch = getSmartLunchTime(settings.defaultStartTime, settings.defaultEndTime);
@@ -49,6 +54,9 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onSave, 
             date: getLocalDateString(),
             startTime: settings.defaultStartTime,
             endTime: settings.defaultEndTime,
+            scheduledStartTime: settings.defaultStartTime,
+            scheduledEndTime: settings.defaultEndTime,
+            isCustomShift: false,
             lunchStart: smartLunch.lunchStart,
             lunchEnd: smartLunch.lunchEnd,
             notes: '',
@@ -152,16 +160,49 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onSave, 
 
               {showTimeFields && (
                 <>
-                  <div className="flex items-center gap-4">
+                  <div className="flex gap-3">
                     <button 
                         type="button"
                         onClick={() => setFormData({...formData, lunchEnabled: !formData.lunchEnabled})}
-                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl border transition-all font-bold text-sm ${formData.lunchEnabled ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500'}`}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border transition-all font-bold text-sm ${formData.lunchEnabled ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500'}`}
                     >
                         <Utensils className="w-4 h-4" />
                         {t.lunch}
                     </button>
+                    <button 
+                        type="button"
+                        onClick={() => setFormData({...formData, isCustomShift: !formData.isCustomShift})}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border transition-all font-bold text-sm ${formData.isCustomShift ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500'}`}
+                    >
+                        <ListChecks className="w-4 h-4" />
+                        {t.customShift}
+                    </button>
                   </div>
+
+                  {formData.isCustomShift && (
+                    <div className="p-4 bg-indigo-50 dark:bg-indigo-900/10 rounded-3xl border border-indigo-100 dark:border-indigo-800 space-y-3 animate-in zoom-in-95 duration-200">
+                      <div className="flex items-center gap-2 px-1 text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">
+                        <Clock className="w-3 h-3" />
+                        {t.schedShift}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <TimePickerField 
+                          label={t.schedStart} 
+                          value={formData.scheduledStartTime || settings.defaultStartTime} 
+                          onChange={(val) => setFormData({...formData, scheduledStartTime: val})} 
+                          is12h={is12h}
+                          icon={<Zap className="w-3 h-3" />}
+                        />
+                        <TimePickerField 
+                          label={t.schedEnd} 
+                          value={formData.scheduledEndTime || settings.defaultEndTime} 
+                          onChange={(val) => setFormData({...formData, scheduledEndTime: val})} 
+                          is12h={is12h}
+                          icon={<Zap className="w-3 h-3" />}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <TimePickerField 

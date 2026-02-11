@@ -1,4 +1,3 @@
-
 import { TimeEntry, AppSettings } from '../types';
 
 const KEYS = {
@@ -8,7 +7,7 @@ const KEYS = {
 
 const DEFAULT_SETTINGS: AppSettings = {
   defaultStartTime: '09:00',
-  defaultEndTime: '17:30',
+  defaultEndTime: '17:00',
   unpaidBreakMinutes: 0,
   userName: 'User',
   currency: 'USD',
@@ -18,9 +17,13 @@ const DEFAULT_SETTINGS: AppSettings = {
   weeklyGoalHours: 40,
   theme: 'light',
   holidayDefaultHours: 8,
-  lunchEnabledDefault: false, // Alterado para desativado por padrão
+  lunchEnabledDefault: false,
   dateFormat: 'MM/DD/YYYY',
-  timeFormat: '12h'
+  timeFormat: '12h',
+  roundingEnabled: true,
+  clockInRoundingMinutes: 4,
+  clockOutRoundingMinutes: 14,
+  otThresholdMinutes: 15
 };
 
 export const storageService = {
@@ -36,11 +39,6 @@ export const storageService = {
   getSettings: (): AppSettings => {
     const data = localStorage.getItem(KEYS.SETTINGS);
     const parsed = data ? JSON.parse(data) : DEFAULT_SETTINGS;
-    // Migração de chave antiga se existir
-    if (parsed.paidMinutes !== undefined && parsed.unpaidBreakMinutes === undefined) {
-       parsed.unpaidBreakMinutes = parsed.paidMinutes;
-       delete parsed.paidMinutes;
-    }
     return { ...DEFAULT_SETTINGS, ...parsed };
   },
   

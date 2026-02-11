@@ -1,4 +1,3 @@
-
 export const translations = {
   en: {
     hello: "Hello",
@@ -82,7 +81,16 @@ export const translations = {
     startDate: "Start Date",
     endDate: "End Date",
     totalPeriodHours: "Total Hours in Period",
-    totalPeriodEarnings: "Total Earnings in Period"
+    totalPeriodEarnings: "Total Earnings in Period",
+    rounding: "Time Rounding",
+    roundingDesc: "Round clock-in/out for payroll",
+    clockInRound: "Clock-in margin (min)",
+    clockOutRound: "Clock-out margin (min)",
+    otThreshold: "OT Start Threshold (min)",
+    customShift: "Custom Shift",
+    schedShift: "Scheduled Shift",
+    schedStart: "Sched. Start",
+    schedEnd: "Sched. End"
   },
   pt: {
     hello: "Olá",
@@ -166,6 +174,15 @@ export const translations = {
     startDate: "Data Inicial",
     endDate: "Data Final",
     totalPeriodHours: "Horas Totais no Período",
-    totalPeriodEarnings: "Ganhos Totais no Período"
+    totalPeriodEarnings: "Ganhos Totais no Período",
+    rounding: "Arredondamento",
+    roundingDesc: "Ajusta batidas para cálculo de salário",
+    clockInRound: "Margem Entrada (min)",
+    clockOutRound: "Margem Saída (min)",
+    otThreshold: "Limite Início Extras (min)",
+    customShift: "Escala Customizada",
+    schedShift: "Escala Prevista",
+    schedStart: "Prev. Início",
+    schedEnd: "Prev. Fim"
   }
 };

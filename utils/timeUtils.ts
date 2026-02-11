@@ -1,41 +1,75 @@
-
 import { TimeEntry, AppSettings } from '../types';
 
-export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings): number => {
+const parseToMinutes = (timeStr: string): number => {
+  if (!timeStr) return 0;
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return (hours || 0) * 60 + (minutes || 0);
+};
+
+export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings, forWage: boolean = false): number => {
   if (entry.isHoliday && !entry.holidayWorked) {
     return settings.holidayDefaultHours || 0;
   }
 
   if (!entry.startTime || !entry.endTime) return 0;
   
-  const parseToMinutes = (timeStr: string): number => {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return (hours || 0) * 60 + (minutes || 0);
-  };
-
-  const startTotal = parseToMinutes(entry.startTime);
+  let startTotal = parseToMinutes(entry.startTime);
   let endTotal = parseToMinutes(entry.endTime);
   
-  // Se a hora de fim for menor que a de início, o turno atravessou a meia-noite
   if (endTotal < startTotal) {
-    endTotal += 1440; // Adiciona 24 horas em minutos
+    endTotal += 1440;
+  }
+
+  if (forWage && settings.roundingEnabled) {
+    const schedStart = parseToMinutes(entry.isCustomShift ? entry.scheduledStartTime! : settings.defaultStartTime);
+    let schedEnd = parseToMinutes(entry.isCustomShift ? entry.scheduledEndTime! : settings.defaultEndTime);
+    
+    // Adjust scheduled end if shift spans midnight
+    if (schedEnd < schedStart) schedEnd += 1440;
+
+    // Apply Clock-in Rounding
+    if (Math.abs(startTotal - schedStart) <= (settings.clockInRoundingMinutes || 0)) {
+      startTotal = schedStart;
+    }
+    
+    // Apply Clock-out Rounding
+    if (Math.abs(endTotal - schedEnd) <= (settings.clockOutRoundingMinutes || 0)) {
+      endTotal = schedEnd;
+    }
   }
   
   let totalMinutes = endTotal - startTotal;
-  
-  // Priorizar a pausa fixa (Break) do registro se existir, senão usar a do setup
   const breakMinutes = entry.unpaidBreakMinutes !== undefined 
     ? entry.unpaidBreakMinutes 
     : (Number(settings.unpaidBreakMinutes) || 0);
     
   totalMinutes -= breakMinutes;
-  
-  // Retorna as horas, garantindo que não seja negativo
   return Math.max(0, totalMinutes / 60);
 };
 
+export const calculateOvertimeMinutes = (entry: TimeEntry, settings: AppSettings): number => {
+  if (!entry.startTime || !entry.endTime || (entry.isHoliday && !entry.holidayWorked)) return 0;
+
+  const schedStart = parseToMinutes(entry.isCustomShift ? entry.scheduledStartTime! : settings.defaultStartTime);
+  let schedEnd = parseToMinutes(entry.isCustomShift ? entry.scheduledEndTime! : settings.defaultEndTime);
+  let realEnd = parseToMinutes(entry.endTime);
+  
+  const realStart = parseToMinutes(entry.startTime);
+  if (realEnd < realStart) realEnd += 1440;
+  if (schedEnd < schedStart) schedEnd += 1440;
+
+  const diff = realEnd - schedEnd;
+  
+  if (diff >= (settings.otThresholdMinutes || 0)) {
+    return Math.max(0, diff);
+  }
+  
+  return 0;
+};
+
 export const calculateEarnings = (entry: TimeEntry, settings: AppSettings): number => {
-  const hours = calculateWorkHours(entry, settings);
+  // Earnings always use rounded hours if enabled
+  const hours = calculateWorkHours(entry, settings, true);
   const baseRate = entry.hourlyRate ?? settings.hourlyRate;
   
   if (entry.isHoliday && entry.holidayWorked) {
