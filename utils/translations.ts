@@ -90,7 +90,12 @@ export const translations = {
     customShift: "Custom Shift",
     schedShift: "Scheduled Shift",
     schedStart: "Sched. Start",
-    schedEnd: "Sched. End"
+    schedEnd: "Sched. End",
+    otEnabled: "Enable Overtime Calculation",
+    otMultiplier: "OT Pay Multiplier",
+    realTime: "Real Input",
+    roundedTime: "Rounded (Payroll)",
+    breakdown: "Pay Breakdown"
   },
   pt: {
     hello: "Olá",
@@ -183,6 +188,11 @@ export const translations = {
     customShift: "Escala Customizada",
     schedShift: "Escala Prevista",
     schedStart: "Prev. Início",
-    schedEnd: "Prev. Fim"
+    schedEnd: "Prev. Fim",
+    otEnabled: "Habilitar Cálculo de Horas Extras",
+    otMultiplier: "Multiplicador de Extras",
+    realTime: "Real (Entrada)",
+    roundedTime: "Arredondado (Folha)",
+    breakdown: "Detalhamento de Pagamento"
   }
 };

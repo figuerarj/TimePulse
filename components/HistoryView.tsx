@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { TimeEntry, AppSettings } from '../types';
-import { calculateWorkHours, formatDisplayDate, formatDisplayTime } from '../utils/timeUtils';
+import { calculateWorkHours, formatDisplayDate, formatDisplayTime, calculateOvertimeMinutes, calculateEarnings } from '../utils/timeUtils';
 import { translations } from '../utils/translations';
-import { Edit2, Trash2, Search, DollarSign, Calendar, TrendingUp, Plus } from 'lucide-react';
+import { Edit2, Trash2, Search, DollarSign, Calendar, TrendingUp, Clock, Zap, Target } from 'lucide-react';
 
 interface HistoryViewProps {
   entries: TimeEntry[];
@@ -42,14 +41,9 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
     });
 
     const hours = weekEntries.reduce((acc, curr) => 
-      acc + calculateWorkHours(curr, settings), 0
+      acc + calculateWorkHours(curr, settings, false), 0
     );
-    const earnings = weekEntries.reduce((acc, curr) => {
-      const h = calculateWorkHours(curr, settings);
-      const baseRate = curr.hourlyRate ?? settings.hourlyRate;
-      const rate = (curr.isHoliday && curr.holidayWorked) ? baseRate * settings.holidayRateMultiplier : baseRate;
-      return acc + (h * rate);
-    }, 0);
+    const earnings = weekEntries.reduce((acc, curr) => acc + calculateEarnings(curr, settings), 0);
 
     return { hours, earnings };
   };
@@ -89,25 +83,32 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
         {groupedEntries.map(([month, monthEntries]) => (
           <div key={month} className="space-y-3">
             <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 capitalize">{month}</h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {monthEntries.map((entry, index) => {
-                const hours = calculateWorkHours(entry, settings);
+                const totalRoundedHours = calculateWorkHours(entry, settings, true);
+                const otMinutes = calculateOvertimeMinutes(entry, settings);
+                const otHours = otMinutes / 60;
+                const regularHours = Math.max(0, totalRoundedHours - otHours);
+                
                 const baseRate = entry.hourlyRate ?? settings.hourlyRate;
-                const finalRate = (entry.isHoliday && entry.holidayWorked) ? baseRate * settings.holidayRateMultiplier : baseRate;
-                const earnings = hours * finalRate;
-                const locale = settings.language === 'pt' ? 'pt-BR' : 'en-US';
+                const effectiveRate = (entry.isHoliday && entry.holidayWorked) ? baseRate * settings.holidayRateMultiplier : baseRate;
+                const otRate = effectiveRate * (settings.otRateMultiplier || 1.5);
 
+                const regularPay = regularHours * effectiveRate;
+                const otPay = otHours * otRate;
+                const totalEarnings = regularPay + otPay;
+
+                const locale = settings.language === 'pt' ? 'pt-BR' : 'en-US';
                 const currentWeek = getStartOfWeek(entry.date);
                 const prevEntry = monthEntries[index - 1];
                 const isNewWeek = !prevEntry || getStartOfWeek(prevEntry.date) !== currentWeek;
-
                 const weekStats = isNewWeek ? getWeekStats(currentWeek, entries) : null;
 
                 return (
                   <React.Fragment key={entry.id}>
                     {isNewWeek && weekStats && (
                       <div className="pt-6 pb-2">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-2">
                           <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
                           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
@@ -115,57 +116,112 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                           </span>
                           <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
                         </div>
-                        <div className="flex flex-col items-center">
-                          <p className="text-xs font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                        <div className="flex justify-between px-4 bg-indigo-50 dark:bg-indigo-950/30 py-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/50">
+                          <p className="text-xs font-black text-indigo-700 dark:text-indigo-400 flex items-center gap-1">
                              <TrendingUp className="w-3 h-3" />
-                             {displayCurrency} {weekStats.earnings.toFixed(2)}
+                             {displayCurrency} {weekStats.earnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </p>
-                          <p className="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase">
+                          <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">
                              {weekStats.hours.toFixed(1)} {t.hrs} Total
                           </p>
                         </div>
                       </div>
                     )}
-                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden active:bg-slate-50 dark:active:bg-slate-800/50 transition-all group hover:border-indigo-100 dark:hover:border-indigo-900/30">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="font-bold text-slate-800 dark:text-slate-200">
-                            {new Date(entry.date + 'T12:00:00').toLocaleDateString(locale, { weekday: 'long' })}, {formatDisplayDate(entry.date, settings.dateFormat)}
+                    
+                    <div className="bg-white dark:bg-slate-900 p-5 rounded-[28px] border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden active:bg-slate-50 dark:active:bg-slate-800/50 transition-all group hover:border-indigo-200 dark:hover:border-indigo-900/40">
+                      
+                      {/* Top bar: Date & Actions */}
+                      <div className="flex justify-between items-start mb-4 border-b border-slate-50 dark:border-slate-800 pb-3">
+                        <div>
+                          <p className="font-black text-slate-800 dark:text-slate-200 text-sm">
+                            {new Date(entry.date + 'T12:00:00').toLocaleDateString(locale, { weekday: 'short' }).toUpperCase()}, {formatDisplayDate(entry.date, settings.dateFormat)}
                           </p>
-                          <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${entry.isHoliday ? (entry.holidayWorked ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20' : 'bg-orange-50 text-orange-600 dark:bg-orange-900/20') : 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800'}`}>
-                              {entry.isHoliday ? (entry.holidayWorked ? t.holidayWorked : t.holiday) : `${formatDisplayTime(entry.startTime, settings.timeFormat)} - ${formatDisplayTime(entry.endTime, settings.timeFormat)}`}
+                          {entry.isHoliday && (
+                            <span className="text-[9px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded uppercase mt-1 inline-block tracking-tighter">
+                                {entry.holidayWorked ? t.holidayWorked : t.holiday}
                             </span>
-                            {entry.lunchEnabled && entry.lunchStart && (
-                                <span className="text-[10px] text-slate-400 dark:text-slate-500">{t.lunch}: {formatDisplayTime(entry.lunchStart, settings.timeFormat)}-{formatDisplayTime(entry.lunchEnd, settings.timeFormat)}</span>
-                            )}
-                            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <DollarSign className="w-3 h-3" />
-                              {displayCurrency} {finalRate.toFixed(2)}/h
-                            </span>
-                          </div>
-                          {entry.notes && (
-                            <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-2 bg-indigo-50 dark:bg-indigo-900/20 inline-block px-2 py-1 rounded-md italic">
-                              "{entry.notes}"
-                            </p>
                           )}
                         </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
-                            {hours.toFixed(1)}h
-                          </p>
-                          <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-                            {displayCurrency} {earnings.toFixed(2)}
-                          </p>
-                          <div className="flex gap-1">
-                            <button onClick={() => onEdit(entry)} className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors active:scale-90">
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => onDelete(entry.id)} className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors active:scale-90">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                        <div className="flex gap-1">
+                          <button onClick={() => onEdit(entry)} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all active:scale-90">
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => onDelete(entry.id)} className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all active:scale-90">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
+                      </div>
+
+                      {/* Content: Calculations Grid */}
+                      <div className="grid grid-cols-1 gap-4">
+                        
+                        {/* 1. Rounded Hours Row */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="bg-indigo-50 dark:bg-indigo-900/30 p-1.5 rounded-lg">
+                                    <Target className="w-3.5 h-3.5 text-indigo-600" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.roundedTime}</p>
+                                    <p className="text-sm font-black text-slate-700 dark:text-slate-300">{regularHours.toFixed(1)}h</p>
+                                </div>
+                            </div>
+                            <p className="text-xs font-bold text-slate-500">{displayCurrency} {regularPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                        </div>
+
+                        {/* 2. Overtime Row (conditional) */}
+                        {(otHours > 0 || settings.otEnabled) && (
+                            <div className={`flex items-center justify-between ${otHours > 0 ? 'opacity-100' : 'opacity-30'}`}>
+                                <div className="flex items-center gap-2">
+                                    <div className="bg-amber-50 dark:bg-amber-900/30 p-1.5 rounded-lg">
+                                        <Zap className="w-3.5 h-3.5 text-amber-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.overtime}</p>
+                                        <p className="text-sm font-black text-slate-700 dark:text-slate-300">{otHours.toFixed(1)}h</p>
+                                    </div>
+                                </div>
+                                <p className="text-xs font-bold text-amber-600">{displayCurrency} {otPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                            </div>
+                        )}
+
+                        {/* 3. Real Input Row */}
+                        <div className="flex items-center justify-between opacity-60">
+                            <div className="flex items-center gap-2">
+                                <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-lg">
+                                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.realTime}</p>
+                                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                                        {formatDisplayTime(entry.startTime, settings.timeFormat)} - {formatDisplayTime(entry.endTime, settings.timeFormat)}
+                                    </p>
+                                </div>
+                            </div>
+                            <span className="text-[10px] font-medium text-slate-400">({(regularHours + otHours).toFixed(1)}h total)</span>
+                        </div>
+
+                        {/* Final Sum & Total */}
+                        <div className="mt-2 pt-3 border-t border-slate-50 dark:border-slate-800 flex justify-between items-end">
+                            <div>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.breakdown}</p>
+                                <p className="text-[10px] font-bold text-indigo-500">
+                                    {displayCurrency} {regularPay.toFixed(2)} + {displayCurrency} {otPay.toFixed(2)}
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Pay</p>
+                                <p className="text-xl font-black text-indigo-600 dark:text-indigo-400 tracking-tighter">
+                                    {displayCurrency} {totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </p>
+                            </div>
+                        </div>
+
+                        {entry.notes && (
+                            <div className="mt-1 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <p className="text-[11px] text-slate-500 italic font-medium leading-relaxed">"{entry.notes}"</p>
+                            </div>
+                        )}
                       </div>
                     </div>
                   </React.Fragment>
@@ -177,7 +233,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
         {entries.length === 0 && (
           <div className="text-center py-20 text-slate-400 dark:text-slate-600 flex flex-col items-center gap-4">
              <Calendar className="w-12 h-12 opacity-10" />
-             <p>{t.noEntries}</p>
+             <p className="font-medium">{t.noEntries}</p>
           </div>
         )}
       </div>

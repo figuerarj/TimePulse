@@ -3,8 +3,8 @@ export interface TimeEntry {
   date: string;
   startTime: string;
   endTime: string;
-  scheduledStartTime?: string; // Used as reference for rounding/OT
-  scheduledEndTime?: string;   // Used as reference for rounding/OT
+  scheduledStartTime?: string; 
+  scheduledEndTime?: string;   
   isCustomShift?: boolean;
   lunchStart: string;
   lunchEnd: string;
@@ -31,11 +31,12 @@ export interface AppSettings {
   lunchEnabledDefault: boolean;
   dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY';
   timeFormat: '24h' | '12h';
-  // New features
   roundingEnabled: boolean;
   clockInRoundingMinutes: number;
   clockOutRoundingMinutes: number;
+  otEnabled: boolean;
   otThresholdMinutes: number;
+  otRateMultiplier: number;
 }
 
 export type ViewType = 'dashboard' | 'history' | 'stats' | 'settings';

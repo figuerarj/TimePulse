@@ -171,7 +171,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
       <section className="space-y-4">
         <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 px-1">
           <Scale className="w-3 h-3" />
-          {t.rounding}
+          {t.rounding} & {t.overtime}
         </h3>
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-sm">
           <div className="flex items-center justify-between p-2">
@@ -198,10 +198,34 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
               </div>
             </div>
           )}
-          <div className="space-y-1 pt-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.otThreshold}</label>
-              <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none font-bold text-slate-800 dark:text-slate-100" value={settings.otThresholdMinutes} onChange={e => onUpdate({...settings, otThresholdMinutes: parseInt(e.target.value) || 0})} />
+
+          <div className="h-px bg-slate-100 dark:bg-slate-800 my-2"></div>
+
+          <div className="flex items-center justify-between p-2">
+            <div>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{t.overtime}</p>
+              <p className="text-[10px] text-slate-400 font-medium">{t.otEnabled}</p>
+            </div>
+            <button 
+              onClick={() => onUpdate({...settings, otEnabled: !settings.otEnabled})}
+              className={`w-12 h-6 rounded-full transition-all relative ${settings.otEnabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+            >
+              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.otEnabled ? 'left-7' : 'left-1'}`}></div>
+            </button>
           </div>
+
+          {settings.otEnabled && (
+            <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
+              <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{t.otThreshold}</label>
+                  <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 outline-none font-bold text-slate-800 dark:text-slate-100" value={settings.otThresholdMinutes} onChange={e => onUpdate({...settings, otThresholdMinutes: parseInt(e.target.value) || 0})} />
+              </div>
+              <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{t.otMultiplier}</label>
+                  <input type="number" step="0.1" className="w-full bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 outline-none font-bold text-slate-800 dark:text-slate-100" value={settings.otRateMultiplier} onChange={e => onUpdate({...settings, otRateMultiplier: parseFloat(e.target.value) || 1.0})} />
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

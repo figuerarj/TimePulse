@@ -23,7 +23,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   roundingEnabled: true,
   clockInRoundingMinutes: 4,
   clockOutRoundingMinutes: 14,
-  otThresholdMinutes: 15
+  otEnabled: true,
+  otThresholdMinutes: 15,
+  otRateMultiplier: 1.5
 };
 
 export const storageService = {

@@ -24,15 +24,12 @@ export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings, forW
     const schedStart = parseToMinutes(entry.isCustomShift ? entry.scheduledStartTime! : settings.defaultStartTime);
     let schedEnd = parseToMinutes(entry.isCustomShift ? entry.scheduledEndTime! : settings.defaultEndTime);
     
-    // Adjust scheduled end if shift spans midnight
     if (schedEnd < schedStart) schedEnd += 1440;
 
-    // Apply Clock-in Rounding
     if (Math.abs(startTotal - schedStart) <= (settings.clockInRoundingMinutes || 0)) {
       startTotal = schedStart;
     }
     
-    // Apply Clock-out Rounding
     if (Math.abs(endTotal - schedEnd) <= (settings.clockOutRoundingMinutes || 0)) {
       endTotal = schedEnd;
     }
@@ -48,6 +45,7 @@ export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings, forW
 };
 
 export const calculateOvertimeMinutes = (entry: TimeEntry, settings: AppSettings): number => {
+  if (!settings.otEnabled) return 0;
   if (!entry.startTime || !entry.endTime || (entry.isHoliday && !entry.holidayWorked)) return 0;
 
   const schedStart = parseToMinutes(entry.isCustomShift ? entry.scheduledStartTime! : settings.defaultStartTime);
@@ -68,15 +66,22 @@ export const calculateOvertimeMinutes = (entry: TimeEntry, settings: AppSettings
 };
 
 export const calculateEarnings = (entry: TimeEntry, settings: AppSettings): number => {
-  // Earnings always use rounded hours if enabled
-  const hours = calculateWorkHours(entry, settings, true);
+  const totalRoundedHours = calculateWorkHours(entry, settings, true);
+  const otMinutes = calculateOvertimeMinutes(entry, settings);
+  const otHours = otMinutes / 60;
+  
+  const regularHours = Math.max(0, totalRoundedHours - otHours);
   const baseRate = entry.hourlyRate ?? settings.hourlyRate;
   
+  let rate = baseRate;
   if (entry.isHoliday && entry.holidayWorked) {
-    return hours * (baseRate * (settings.holidayRateMultiplier || 1));
+    rate = baseRate * (settings.holidayRateMultiplier || 1);
   }
+
+  const regularPay = regularHours * rate;
+  const otPay = otHours * (rate * (settings.otRateMultiplier || 1.5));
   
-  return hours * baseRate;
+  return regularPay + otPay;
 };
 
 export const formatDisplayTime = (timeStr: string, format: '24h' | '12h'): string => {
