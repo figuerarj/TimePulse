@@ -93,7 +93,7 @@ export const translations = {
     schedEnd: "Sched. End",
     otEnabled: "Enable Overtime Calculation",
     otMultiplier: "OT Pay Multiplier",
-    realTime: "Real Input",
+    realTime: "Real Clock Input",
     roundedTime: "Rounded (Payroll)",
     breakdown: "Pay Breakdown"
   },
@@ -191,7 +191,7 @@ export const translations = {
     schedEnd: "Prev. Fim",
     otEnabled: "Habilitar Cálculo de Horas Extras",
     otMultiplier: "Multiplicador de Extras",
-    realTime: "Real (Entrada)",
+    realTime: "Real (Batida)",
     roundedTime: "Arredondado (Folha)",
     breakdown: "Detalhamento de Pagamento"
   }

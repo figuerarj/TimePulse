@@ -257,7 +257,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
           </div>
           <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.holidayDefault}</label>
-              <input type="number" step="0.5" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-indigo-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.holidayDefaultHours} onChange={e => onUpdate({...settings, holidayDefaultHours: parseFloat(e.target.value) || 8})} />
+              <input type="number" step="0.5" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 focus:border-indigo-500 transition-all outline-none font-bold text-slate-800 dark:text-slate-100" value={settings.holidayDefaultHours} onChange={e => onUpdate({...settings, holidayDefaultHours: parseFloat(e.target.value) || 8})} />
           </div>
         </div>
       </section>

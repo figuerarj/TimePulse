@@ -41,6 +41,7 @@ export const storageService = {
   getSettings: (): AppSettings => {
     const data = localStorage.getItem(KEYS.SETTINGS);
     const parsed = data ? JSON.parse(data) : DEFAULT_SETTINGS;
+    // Merge to ensure new fields (otEnabled, etc) exist
     return { ...DEFAULT_SETTINGS, ...parsed };
   },
   
