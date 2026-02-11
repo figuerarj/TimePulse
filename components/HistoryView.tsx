@@ -41,7 +41,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
     });
 
     const hours = weekEntries.reduce((acc, curr) => 
-      acc + calculateWorkHours(curr, settings, false), 0
+      acc + calculateWorkHours(curr, settings, true), 0
     );
     const earnings = weekEntries.reduce((acc, curr) => acc + calculateEarnings(curr, settings), 0);
 
@@ -90,6 +90,8 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                 const otHours = otMinutes / 60;
                 const regularHours = Math.max(0, totalRoundedHours - otHours);
                 
+                const realElapsedHours = calculateWorkHours(entry, settings, false);
+
                 const baseRate = entry.hourlyRate ?? settings.hourlyRate;
                 const effectiveRate = (entry.isHoliday && entry.holidayWorked) ? baseRate * settings.holidayRateMultiplier : baseRate;
                 const otRate = effectiveRate * (settings.otRateMultiplier || 1.5);
@@ -130,7 +132,6 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                     
                     <div className="bg-white dark:bg-slate-900 p-5 rounded-[28px] border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden active:bg-slate-50 dark:active:bg-slate-800/50 transition-all group hover:border-indigo-200 dark:hover:border-indigo-900/40">
                       
-                      {/* Top bar: Date & Actions */}
                       <div className="flex justify-between items-start mb-4 border-b border-slate-50 dark:border-slate-800 pb-3">
                         <div>
                           <p className="font-black text-slate-800 dark:text-slate-200 text-sm">
@@ -152,10 +153,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                         </div>
                       </div>
 
-                      {/* Content: Calculations Grid */}
                       <div className="grid grid-cols-1 gap-4">
-                        
-                        {/* 1. Rounded Hours Row */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <div className="bg-indigo-50 dark:bg-indigo-900/30 p-1.5 rounded-lg">
@@ -169,7 +167,6 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                             <p className="text-xs font-bold text-slate-500">{displayCurrency} {regularPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                         </div>
 
-                        {/* 2. Overtime Row (conditional) */}
                         {(otHours > 0 || settings.otEnabled) && (
                             <div className={`flex items-center justify-between ${otHours > 0 ? 'opacity-100' : 'opacity-30'}`}>
                                 <div className="flex items-center gap-2">
@@ -185,7 +182,6 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                             </div>
                         )}
 
-                        {/* 3. Real Input Row */}
                         <div className="flex items-center justify-between opacity-60">
                             <div className="flex items-center gap-2">
                                 <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-lg">
@@ -198,10 +194,9 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                                     </p>
                                 </div>
                             </div>
-                            <span className="text-[10px] font-medium text-slate-400">({(regularHours + otHours).toFixed(1)}h total)</span>
+                            <span className="text-[10px] font-medium text-slate-400">({realElapsedHours.toFixed(1)}h {t.hrs})</span>
                         </div>
 
-                        {/* Final Sum & Total */}
                         <div className="mt-2 pt-3 border-t border-slate-50 dark:border-slate-800 flex justify-between items-end">
                             <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.breakdown}</p>
