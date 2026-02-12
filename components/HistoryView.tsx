@@ -85,11 +85,13 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
             <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 capitalize">{month}</h3>
             <div className="space-y-4">
               {monthEntries.map((entry, index) => {
+                // Cálculo para o pagamento (usa arredondamento se ativo)
                 const totalRoundedHours = calculateWorkHours(entry, settings, true);
                 const otMinutes = calculateOvertimeMinutes(entry, settings);
                 const otHours = otMinutes / 60;
                 const regularHours = Math.max(0, totalRoundedHours - otHours);
                 
+                // Cálculo apenas para visualização real
                 const realElapsedHours = calculateWorkHours(entry, settings, false);
                 const roundedRange = getRoundedTimeRange(entry, settings);
 
@@ -155,6 +157,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                       </div>
 
                       <div className="grid grid-cols-1 gap-4">
+                        {/* Seção Arredondada (Folha de Pagamento) */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <div className="bg-indigo-50 dark:bg-indigo-900/30 p-1.5 rounded-lg">
@@ -163,12 +166,15 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.roundedTime}</p>
                                     <p className="text-sm font-black text-slate-700 dark:text-slate-300">{regularHours.toFixed(1)}h</p>
-                                    <p className="text-[10px] font-medium text-slate-400">{roundedRange.start} - {roundedRange.end}</p>
+                                    <p className="text-[10px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded mt-0.5 inline-block">
+                                        {roundedRange.start} - {roundedRange.end}
+                                    </p>
                                 </div>
                             </div>
                             <p className="text-xs font-bold text-slate-500">{displayCurrency} {regularPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                         </div>
 
+                        {/* Seção Horas Extras */}
                         {(otHours > 0 || settings.otEnabled) && (
                             <div className={`flex items-center justify-between ${otHours > 0 ? 'opacity-100' : 'opacity-30'}`}>
                                 <div className="flex items-center gap-2">
@@ -184,6 +190,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                             </div>
                         )}
 
+                        {/* Seção Batida Real (Para Referência) */}
                         <div className="flex items-center justify-between opacity-60">
                             <div className="flex items-center gap-2">
                                 <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-lg">
@@ -199,6 +206,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                             <span className="text-[10px] font-medium text-slate-400">({realElapsedHours.toFixed(1)}h {t.hrs})</span>
                         </div>
 
+                        {/* Detalhamento e Total */}
                         <div className="mt-2 pt-3 border-t border-slate-50 dark:border-slate-800 flex justify-between items-end">
                             <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.breakdown}</p>
