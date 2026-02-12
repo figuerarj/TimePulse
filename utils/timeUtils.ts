@@ -14,53 +14,58 @@ const minutesToHHMM = (totalMinutes: number): string => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
 
+/**
+ * Retorna os horários exatos de Início e Fim que o sistema considerou para o cálculo de pagamento.
+ */
 export const getRoundedTimeRange = (entry: TimeEntry, settings: AppSettings): { start: string, end: string } => {
   if (!entry.startTime || !entry.endTime) return { start: '', end: '' };
   
-  let realIn = parseToMinutes(entry.startTime);
-  let realOut = parseToMinutes(entry.endTime);
-  if (realOut < realIn) realOut += 1440;
-
+  const realIn = parseToMinutes(entry.startTime);
+  const realOut = parseToMinutes(entry.endTime);
   const schedStart = parseToMinutes(entry.isCustomShift ? (entry.scheduledStartTime || settings.defaultStartTime) : settings.defaultStartTime);
   let schedEnd = parseToMinutes(entry.isCustomShift ? (entry.scheduledEndTime || settings.defaultEndTime) : settings.defaultEndTime);
   
-  // Normalizar schedEnd relativo ao schedStart para turnos noturnos
-  if (schedEnd < schedStart) schedEnd += 1440;
+  // Normalização para turnos noturnos
+  let normalizedRealOut = realOut;
+  if (normalizedRealOut < realIn) normalizedRealOut += 1440;
+
+  let normalizedSchedEnd = schedEnd;
+  if (normalizedSchedEnd < schedStart) normalizedSchedEnd += 1440;
 
   let calcIn = realIn;
-  let calcOut = realOut;
+  let calcOut = normalizedRealOut;
 
   if (settings.roundingEnabled) {
     /**
-     * REGRA DE ENTRADA (CLOCK-IN)
-     * Se entrou antes do previsto: usa o previsto (ignora tempo extra anterior)
+     * REGRA DE ENTRADA (MANDATÓRIA): calculationStart = max(realIn, scheduledIn)
+     * Ignora completamente tempo antes do previsto.
      */
-    if (realIn <= schedStart) {
-      calcIn = schedStart;
-    } else {
-      // Se entrou depois do previsto, mas dentro da margem de atraso
-      const delay = realIn - schedStart;
+    calcIn = Math.max(realIn, schedStart);
+
+    /**
+     * ARREDONDAMENTO DE ENTRADA (APÓS REGRA ACIMA)
+     * Se ainda estiver atrasado em relação ao previsto, verifica a margem.
+     */
+    if (calcIn > schedStart) {
+      const delay = calcIn - schedStart;
       if (delay <= (settings.clockInRoundingMinutes || 0)) {
         calcIn = schedStart;
-      } else {
-        calcIn = realIn;
       }
     }
 
     /**
-     * REGRA DE SAÍDA (CLOCK-OUT)
+     * REGRA DE SAÍDA (ARREDONDAMENTO)
      */
-    if (realOut < schedEnd) {
-      // Saiu antes do previsto: se dentro da margem, arredonda para o previsto (abono)
-      if (schedEnd - realOut <= (settings.clockOutRoundingMinutes || 0)) {
-        calcOut = schedEnd;
+    if (normalizedRealOut < normalizedSchedEnd) {
+      // Saiu antes do previsto: se dentro da margem, abona (arredonda para o fim da escala)
+      if (normalizedSchedEnd - normalizedRealOut <= (settings.clockOutRoundingMinutes || 0)) {
+        calcOut = normalizedSchedEnd;
       }
     } else {
-      // Saiu no horário ou depois: se dentro da margem, arredonda para baixo (previsto)
-      if (realOut - schedEnd <= (settings.clockOutRoundingMinutes || 0)) {
-        calcOut = schedEnd;
+      // Saiu depois do previsto: se dentro da margem, arredonda para baixo (fim da escala)
+      if (normalizedRealOut - normalizedSchedEnd <= (settings.clockOutRoundingMinutes || 0)) {
+        calcOut = normalizedSchedEnd;
       }
-      // Se for maior que a margem, o tempo excedente é considerado (e pode virar OT)
     }
   }
 
@@ -77,37 +82,41 @@ export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings, forW
 
   if (!entry.startTime || !entry.endTime) return 0;
   
-  let realIn = parseToMinutes(entry.startTime);
-  let realOut = parseToMinutes(entry.endTime);
-  if (realOut < realIn) realOut += 1440;
-
+  const realIn = parseToMinutes(entry.startTime);
+  const realOut = parseToMinutes(entry.endTime);
+  
   let startTotal = realIn;
   let endTotal = realOut;
-  
+  if (endTotal < startTotal) endTotal += 1440;
+
   if (forWage && settings.roundingEnabled) {
     const schedStart = parseToMinutes(entry.isCustomShift ? (entry.scheduledStartTime || settings.defaultStartTime) : settings.defaultStartTime);
     let schedEnd = parseToMinutes(entry.isCustomShift ? (entry.scheduledEndTime || settings.defaultEndTime) : settings.defaultEndTime);
     if (schedEnd < schedStart) schedEnd += 1440;
 
-    // Aplicação rigorosa do arredondamento de entrada
-    if (realIn <= schedStart) {
-      startTotal = schedStart;
-    } else {
-      const delay = realIn - schedStart;
+    /**
+     * REGRA DE ENTRADA: max(realIn, scheduledIn)
+     * Ignora tempo antes do turno começar.
+     */
+    startTotal = Math.max(realIn, schedStart);
+
+    // Se houver atraso, aplica a margem de arredondamento de entrada
+    if (startTotal > schedStart) {
+      const delay = startTotal - schedStart;
       if (delay <= (settings.clockInRoundingMinutes || 0)) {
         startTotal = schedStart;
-      } else {
-        startTotal = realIn;
       }
     }
 
-    // Aplicação rigorosa do arredondamento de saída
-    if (realOut < schedEnd) {
-      if (schedEnd - realOut <= (settings.clockOutRoundingMinutes || 0)) {
+    /**
+     * REGRA DE SAÍDA: Arredonda para o previsto se dentro da margem
+     */
+    if (endTotal < schedEnd) {
+      if (schedEnd - endTotal <= (settings.clockOutRoundingMinutes || 0)) {
         endTotal = schedEnd;
       }
     } else {
-      if (realOut - schedEnd <= (settings.clockOutRoundingMinutes || 0)) {
+      if (endTotal - schedEnd <= (settings.clockOutRoundingMinutes || 0)) {
         endTotal = schedEnd;
       }
     }
@@ -136,7 +145,7 @@ export const calculateOvertimeMinutes = (entry: TimeEntry, settings: AppSettings
   let realOut = parseToMinutes(entry.endTime);
   if (realOut < realIn) realOut += 1440;
 
-  // OT é apenas o tempo trabalhado DEPOIS do horário previsto de saída
+  // OT é estritamente o tempo após o fim previsto da escala
   const diff = realOut - schedEnd;
   
   if (diff >= (settings.otThresholdMinutes || 0)) {
