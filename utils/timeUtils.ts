@@ -2,10 +2,62 @@ import { TimeEntry, AppSettings } from '../types';
 
 const parseToMinutes = (timeStr: string): number => {
   if (!timeStr) return 0;
-  // Handle both HH:mm and HH:mm AM/PM if somehow saved incorrectly
   const cleanTime = timeStr.split(' ')[0];
   const [hours, minutes] = cleanTime.split(':').map(Number);
   return (hours || 0) * 60 + (minutes || 0);
+};
+
+const minutesToHHMM = (totalMinutes: number): string => {
+  const norm = ((totalMinutes % 1440) + 1440) % 1440;
+  const h = Math.floor(norm / 60);
+  const m = norm % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+export const getRoundedTimeRange = (entry: TimeEntry, settings: AppSettings): { start: string, end: string } => {
+  if (!entry.startTime || !entry.endTime) return { start: '', end: '' };
+  
+  const startTotal = parseToMinutes(entry.startTime);
+  const endTotal = parseToMinutes(entry.endTime);
+  const schedStart = parseToMinutes(entry.isCustomShift ? (entry.scheduledStartTime || settings.defaultStartTime) : settings.defaultStartTime);
+  let schedEnd = parseToMinutes(entry.isCustomShift ? (entry.scheduledEndTime || settings.defaultEndTime) : settings.defaultEndTime);
+  
+  let realIn = startTotal;
+  let realOut = endTotal;
+  if (realOut < realIn) realOut += 1440;
+
+  let calcIn = realIn;
+  let calcOut = realOut;
+
+  // Clock-in Logic
+  if (realIn < schedStart) {
+    calcIn = schedStart;
+  } else {
+    const delay = realIn - schedStart;
+    if (delay <= (settings.clockInRoundingMinutes || 0)) {
+      calcIn = schedStart;
+    } else {
+      calcIn = realIn;
+    }
+  }
+
+  // Clock-out Logic
+  if (realOut < schedEnd) {
+    const earlyExit = schedEnd - realOut;
+    if (earlyExit <= (settings.clockOutRoundingMinutes || 0)) {
+      calcOut = schedEnd;
+    }
+  } else if (realOut > schedEnd) {
+    const lateExit = realOut - schedEnd;
+    if (lateExit <= (settings.clockOutRoundingMinutes || 0)) {
+      calcOut = schedEnd;
+    }
+  }
+
+  return {
+    start: formatDisplayTime(minutesToHHMM(calcIn), settings.timeFormat),
+    end: formatDisplayTime(minutesToHHMM(calcOut), settings.timeFormat)
+  };
 };
 
 export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings, forWage: boolean = false): number => {
@@ -18,16 +70,10 @@ export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings, forW
   let startTotal = parseToMinutes(entry.startTime);
   let endTotal = parseToMinutes(entry.endTime);
   
-  // Basic duration calculation (handle overnight)
-  let durationMinutes = endTotal - startTotal;
-  if (durationMinutes < 0) durationMinutes += 1440;
-
   if (forWage && settings.roundingEnabled) {
-    // Get scheduled times with robust fallbacks
     const schedStart = parseToMinutes(entry.isCustomShift ? (entry.scheduledStartTime || settings.defaultStartTime) : settings.defaultStartTime);
     let schedEnd = parseToMinutes(entry.isCustomShift ? (entry.scheduledEndTime || settings.defaultEndTime) : settings.defaultEndTime);
     
-    // Normalize real input relative to scheduled start to handle overnight edge cases
     let realIn = startTotal;
     let realOut = endTotal;
     if (realOut < realIn) realOut += 1440;
@@ -35,39 +81,26 @@ export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings, forW
     let calcIn = realIn;
     let calcOut = realOut;
 
-    /**
-     * REGRA DE ENTRADA (CLOCK-IN)
-     */
     if (realIn < schedStart) {
-      // Entrada antecipada: sempre começa no previsto
       calcIn = schedStart;
     } else {
-      // Entrada no horário ou atrasada
       const delay = realIn - schedStart;
       if (delay <= (settings.clockInRoundingMinutes || 0)) {
-        // Dentro da margem de tolerância: arredonda para o previsto
         calcIn = schedStart;
       } else {
-        // Fora da margem: mantém o atraso real
         calcIn = realIn;
       }
     }
 
-    /**
-     * REGRA DE SAÍDA (CLOCK-OUT)
-     * Ajusta apenas se não houver OT legítima sendo calculada separadamente
-     */
-    // Se saiu antes do previsto
     if (realOut < schedEnd) {
       const earlyExit = schedEnd - realOut;
       if (earlyExit <= (settings.clockOutRoundingMinutes || 0)) {
-        calcOut = schedEnd; // Abona saída antecipada dentro da margem
+        calcOut = schedEnd;
       }
     } else if (realOut > schedEnd) {
-      // Se saiu depois do previsto, mas dentro da margem de arredondamento de saída
       const lateExit = realOut - schedEnd;
       if (lateExit <= (settings.clockOutRoundingMinutes || 0)) {
-        calcOut = schedEnd; // Arredonda para baixo se for apenas "sobra" de saída
+        calcOut = schedEnd;
       }
     }
 
@@ -75,7 +108,6 @@ export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings, forW
     endTotal = calcOut;
   }
   
-  // Re-calculate minutes after rounding adjustments
   let totalMinutes = endTotal - startTotal;
   if (totalMinutes < 0) totalMinutes += 1440;
 
@@ -99,7 +131,6 @@ export const calculateOvertimeMinutes = (entry: TimeEntry, settings: AppSettings
   if (realEnd < realStart) realEnd += 1440;
   if (schedEnd < schedStart) schedEnd += 1440;
 
-  // OT is strictly time worked AFTER the scheduled shift ends
   const diff = realEnd - schedEnd;
   
   if (diff >= (settings.otThresholdMinutes || 0)) {
@@ -114,7 +145,6 @@ export const calculateEarnings = (entry: TimeEntry, settings: AppSettings): numb
   const otMinutes = calculateOvertimeMinutes(entry, settings);
   const otHours = otMinutes / 60;
   
-  // Regular hours = Rounded period minus OT portion
   const regularHours = Math.max(0, totalRoundedHours - otHours);
   const baseRate = entry.hourlyRate ?? settings.hourlyRate;
   

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TimeEntry, AppSettings } from '../types';
-import { calculateWorkHours, formatDisplayDate, formatDisplayTime, calculateOvertimeMinutes, calculateEarnings } from '../utils/timeUtils';
+import { calculateWorkHours, formatDisplayDate, formatDisplayTime, calculateOvertimeMinutes, calculateEarnings, getRoundedTimeRange } from '../utils/timeUtils';
 import { translations } from '../utils/translations';
 import { Edit2, Trash2, Search, DollarSign, Calendar, TrendingUp, Clock, Zap, Target } from 'lucide-react';
 
@@ -91,6 +91,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                 const regularHours = Math.max(0, totalRoundedHours - otHours);
                 
                 const realElapsedHours = calculateWorkHours(entry, settings, false);
+                const roundedRange = getRoundedTimeRange(entry, settings);
 
                 const baseRate = entry.hourlyRate ?? settings.hourlyRate;
                 const effectiveRate = (entry.isHoliday && entry.holidayWorked) ? baseRate * settings.holidayRateMultiplier : baseRate;
@@ -162,6 +163,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.roundedTime}</p>
                                     <p className="text-sm font-black text-slate-700 dark:text-slate-300">{regularHours.toFixed(1)}h</p>
+                                    <p className="text-[10px] font-medium text-slate-400">{roundedRange.start} - {roundedRange.end}</p>
                                 </div>
                             </div>
                             <p className="text-xs font-bold text-slate-500">{displayCurrency} {regularPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
