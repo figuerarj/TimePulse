@@ -165,8 +165,12 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, settings, onAddClick, on
                 : `${formatDisplayTime(entry.startTime, settings.timeFormat)} - ${formatDisplayTime(entry.endTime, settings.timeFormat)}`;
 
               return (
-              <div key={entry.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-4 shadow-sm hover:shadow-md transition-all active:scale-[0.99] group/entry">
-                <div className={`p-3 rounded-xl border transition-colors ${entry.isHoliday ? 'bg-orange-50 border-orange-100 dark:bg-orange-900/20 dark:border-orange-800' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}>
+              <div 
+                key={entry.id} 
+                onClick={onSeeAll}
+                className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98] group/entry cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-900/50"
+              >
+                <div className={`p-3 rounded-xl border transition-colors ${entry.isHoliday ? 'bg-orange-50 border-orange-100 dark:bg-orange-900/20 dark:border-orange-800' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 group-hover/entry:bg-indigo-50 dark:group-hover/entry:bg-indigo-950/30 group-hover/entry:border-indigo-100 dark:group-hover/entry:border-indigo-900/40'}`}>
                   {entry.isHoliday ? <Umbrella className="w-5 h-5 text-orange-500" /> : <Clock className="w-5 h-5 text-indigo-600" />}
                 </div>
                 <div className="flex-1">
@@ -193,6 +197,9 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, settings, onAddClick, on
                     <p className="text-xs font-black text-slate-700 dark:text-slate-300">
                         {displayCurrency} {calculateEarnings(entry, settings).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </p>
+                    {settings.roundingEnabled && !entry.isHoliday && (
+                      <p className="text-[8px] font-bold text-indigo-500 uppercase tracking-tighter opacity-70 group-hover/entry:opacity-100 transition-opacity">Payroll</p>
+                    )}
                 </div>
               </div>
             )})
