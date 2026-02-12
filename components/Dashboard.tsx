@@ -1,6 +1,6 @@
 import React from 'react';
 import { TimeEntry, AppSettings } from '../types';
-import { calculateWorkHours, calculateEarnings, getLocalDateString, calculateOvertimeMinutes } from '../utils/timeUtils';
+import { calculateWorkHours, calculateEarnings, getLocalDateString, calculateOvertimeMinutes, getRoundedTimeRange, formatDisplayTime } from '../utils/timeUtils';
 import { translations } from '../utils/translations';
 import { TrendingUp, Clock, Calendar, Briefcase, PlusCircle, Umbrella, Target, Wallet, ArrowUpRight, Zap } from 'lucide-react';
 
@@ -157,6 +157,13 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, settings, onAddClick, on
           {stats.recentActivity.length > 0 ? (
             stats.recentActivity.map(entry => {
               const otHours = calculateOvertimeMinutes(entry, settings) / 60;
+              
+              // Lógica de exibição de tempo arredondado vs real
+              const roundedRange = settings.roundingEnabled ? getRoundedTimeRange(entry, settings) : null;
+              const timeDisplay = roundedRange 
+                ? `${roundedRange.start} - ${roundedRange.end}` 
+                : `${formatDisplayTime(entry.startTime, settings.timeFormat)} - ${formatDisplayTime(entry.endTime, settings.timeFormat)}`;
+
               return (
               <div key={entry.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-4 shadow-sm hover:shadow-md transition-all active:scale-[0.99] group/entry">
                 <div className={`p-3 rounded-xl border transition-colors ${entry.isHoliday ? 'bg-orange-50 border-orange-100 dark:bg-orange-900/20 dark:border-orange-800' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}>
@@ -168,11 +175,11 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, settings, onAddClick, on
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
                      <p className="text-[11px] text-slate-500 font-medium">
-                      {entry.isHoliday ? (entry.holidayWorked ? t.holidayWorked : t.holiday) : `${entry.startTime} - ${entry.endTime}`}
+                      {entry.isHoliday && !entry.holidayWorked ? t.holiday : timeDisplay}
                     </p>
                     <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                     <p className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
-                      {calculateWorkHours(entry, settings, false).toFixed(1)}h
+                      {calculateWorkHours(entry, settings, true).toFixed(1)}h
                     </p>
                     {otHours > 0 && (
                       <span className="flex items-center gap-0.5 text-[9px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-1 rounded">
