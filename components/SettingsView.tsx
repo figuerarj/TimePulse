@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppSettings, TimeEntry } from '../types';
 import { calculateWorkHours, calculateEarnings } from '../utils/timeUtils';
 import { translations } from '../utils/translations';
@@ -13,7 +13,9 @@ import {
   Utensils,
   User,
   Layout,
-  Scale
+  Scale,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -26,6 +28,22 @@ interface SettingsViewProps {
 const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate, onImport }) => {
   const t = translations[settings.language || 'en'];
   const is12h = settings.timeFormat === '12h';
+  
+  // Estado para controlar quais seções estão expandidas
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    user: true,
+    defaults: true,
+    rounding: false,
+    financials: false,
+    data: true
+  });
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const exportData = () => {
     const data = { entries, settings, exportDate: new Date().toISOString() };
@@ -76,19 +94,54 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
     reader.readAsText(file);
   };
 
+  // Componente Auxiliar para Seções Colapsáveis
+  // Fix: Use React.FC to properly handle children in the JSX transform and avoid missing prop errors.
+  // title is set to any because translations[lang] returns a generic object.
+  const CollapsibleSection: React.FC<{ 
+    id: string, 
+    title: any, 
+    icon: any, 
+    children: React.ReactNode 
+  }> = ({ 
+    id, 
+    title, 
+    icon: Icon, 
+    children 
+  }) => {
+    const isOpen = expandedSections[id];
+    return (
+      <section className="space-y-3">
+        <button 
+          onClick={() => toggleSection(id)}
+          className="w-full flex items-center justify-between px-2 py-1 group active:opacity-70 transition-all"
+        >
+          <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+            <Icon className={`w-3.5 h-3.5 transition-colors ${isOpen ? 'text-indigo-600' : 'text-slate-400'}`} />
+            {title}
+          </h3>
+          <div className={`p-1 rounded-full transition-all ${isOpen ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-slate-300'}`}>
+            {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </div>
+        </button>
+        
+        <div className={`transition-all duration-300 overflow-hidden ${isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 p-6 shadow-sm mb-4">
+            {children}
+          </div>
+        </div>
+      </section>
+    );
+  };
+
   return (
-    <div className="p-6 space-y-8">
-      <div>
+    <div className="p-6 space-y-6 pb-24">
+      <div className="mb-2">
         <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{t.setup}</h2>
         <p className="text-slate-500 dark:text-slate-400 text-sm italic">{t.customize}</p>
       </div>
 
-      <section className="space-y-4">
-        <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 px-1">
-          <User className="w-3 h-3" />
-          {t.userProfile}
-        </h3>
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-sm transition-all">
+      <CollapsibleSection id="user" title={t.userProfile} icon={User}>
+        <div className="space-y-4">
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Your Name</label>
             <input type="text" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-indigo-500 font-medium text-slate-800 dark:text-slate-100 transition-all" value={settings.userName} onChange={e => onUpdate({...settings, userName: e.target.value})} />
@@ -107,14 +160,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
             </div>
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section className="space-y-4">
-        <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 px-1">
-          <Layout className="w-3 h-3" />
-          {t.defaults}
-        </h3>
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-sm">
+      <CollapsibleSection id="defaults" title={t.defaults} icon={Layout}>
+        <div className="space-y-5">
             <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Interface Format</label>
                 <div className="grid grid-cols-2 gap-4">
@@ -166,14 +215,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
                 </button>
             </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section className="space-y-4">
-        <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 px-1">
-          <Scale className="w-3 h-3" />
-          {t.rounding} & {t.overtime}
-        </h3>
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-sm">
+      <CollapsibleSection id="rounding" title={`${t.rounding} & ${t.overtime}`} icon={Scale}>
+        <div className="space-y-4">
           <div className="flex items-center justify-between p-2">
             <div>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{t.rounding}</p>
@@ -227,14 +272,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
             </div>
           )}
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section className="space-y-4">
-        <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 px-1">
-          <DollarSign className="w-3 h-3" />
-          {t.financials}
-        </h3>
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-sm transition-all">
+      <CollapsibleSection id="financials" title={t.financials} icon={DollarSign}>
+        <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.hourlyRate}</label>
@@ -260,23 +301,23 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
               <input type="number" step="0.5" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 focus:border-indigo-500 transition-all outline-none font-bold text-slate-800 dark:text-slate-100" value={settings.holidayDefaultHours} onChange={e => onUpdate({...settings, holidayDefaultHours: parseFloat(e.target.value) || 8})} />
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section className="space-y-4 pb-12">
-        <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 px-1">
-          <Zap className="w-3 h-3" />
+      <section className="space-y-3">
+        <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 px-2 py-1">
+          <Zap className="w-3.5 h-3.5" />
           {t.dataStorage}
         </h3>
         <div className="grid grid-cols-2 gap-4">
-          <button onClick={exportData} className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all active:scale-95">
+          <button onClick={exportData} className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-slate-900 p-6 rounded-[32px] border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all active:scale-95">
             <FileJson className="w-6 h-6 text-indigo-600" />
             <span className="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">{t.exportJson}</span>
           </button>
-          <button onClick={exportCSV} className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all active:scale-95">
+          <button onClick={exportCSV} className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-slate-900 p-6 rounded-[32px] border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all active:scale-95">
             <FileSpreadsheet className="w-6 h-6 text-emerald-600" />
             <span className="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">{t.exportCsv}</span>
           </button>
-          <label className="col-span-2 flex flex-col items-center justify-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-3xl border-2 border-dashed border-indigo-200 dark:border-indigo-800 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all active:scale-[0.98]">
+          <label className="col-span-2 flex flex-col items-center justify-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-[32px] border-2 border-dashed border-indigo-200 dark:border-indigo-800 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all active:scale-[0.98]">
             <Upload className="w-6 h-6 text-indigo-600" />
             <span className="text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400">{t.importBackup}</span>
             <input type="file" accept=".json" onChange={handleImport} className="hidden" />
