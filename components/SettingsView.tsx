@@ -25,38 +25,49 @@ interface SettingsViewProps {
   onImport: (data: { entries: TimeEntry[], settings: AppSettings }) => void;
 }
 
-// DEFINIÇÃO EXTERNA PARA EVITAR PERDA DE FOCO
+// DEFINIÇÃO EXTERNA PARA EVITAR PERDA DE FOCO COM CORES TEMÁTICAS
 const CollapsibleSection: React.FC<{ 
   id: string, 
   title: any, 
   icon: any, 
   isOpen: boolean,
   onToggle: () => void,
+  themeColor?: 'indigo' | 'violet' | 'amber' | 'emerald',
   children: React.ReactNode 
 }> = ({ 
   title, 
   icon: Icon, 
   isOpen,
   onToggle,
+  themeColor = 'indigo',
   children 
 }) => {
+  const colorMap = {
+    indigo: { text: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/30', border: 'border-indigo-100 dark:border-indigo-900/40' },
+    violet: { text: 'text-violet-600', bg: 'bg-violet-50 dark:bg-violet-900/30', border: 'border-violet-100 dark:border-violet-900/40' },
+    amber: { text: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-100 dark:border-amber-900/40' },
+    emerald: { text: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-100 dark:border-emerald-900/40' },
+  };
+
+  const colors = colorMap[themeColor];
+
   return (
     <section className="space-y-3">
       <button 
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-2 py-1 group active:opacity-70 transition-all"
+        className={`w-full flex items-center justify-between px-3 py-2 group active:opacity-70 transition-all rounded-2xl ${isOpen ? `${colors.bg} ${colors.border} border shadow-sm` : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
       >
-        <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 text-left">
-          <Icon className={`w-3.5 h-3.5 transition-colors ${isOpen ? 'text-indigo-600' : 'text-slate-400'}`} />
+        <h3 className={`text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-left transition-colors ${isOpen ? colors.text : 'text-slate-400 dark:text-slate-500'}`}>
+          <Icon className={`w-3.5 h-3.5 ${isOpen ? colors.text : 'text-slate-400'}`} />
           {title}
         </h3>
-        <div className={`p-1 rounded-full transition-all ${isOpen ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-slate-300'}`}>
+        <div className={`p-1 rounded-full transition-all ${isOpen ? `${colors.text}` : 'text-slate-300'}`}>
           {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
       </button>
       
       <div className={`transition-all duration-300 overflow-hidden ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 p-6 shadow-sm mb-4">
+        <div className={`bg-white dark:bg-slate-900 rounded-[32px] border ${isOpen ? colors.border : 'border-slate-100 dark:border-slate-800'} p-6 shadow-sm mb-4`}>
           {children}
         </div>
       </div>
@@ -70,7 +81,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
   
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     user: true,
-    defaults: true,
+    defaults: false,
     rounding: false,
     financials: false,
     data: true
@@ -143,6 +154,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
         id="user" 
         title={t.userProfile} 
         icon={User} 
+        themeColor="indigo"
         isOpen={expandedSections.user} 
         onToggle={() => toggleSection('user')}
       >
@@ -182,6 +194,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
         id="defaults" 
         title={t.defaults} 
         icon={Layout} 
+        themeColor="violet"
         isOpen={expandedSections.defaults} 
         onToggle={() => toggleSection('defaults')}
       >
@@ -192,15 +205,15 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
                   <div className="space-y-1">
                       <label className="text-[8px] font-bold text-slate-400 uppercase">Time Format</label>
                       <div className="flex gap-1 p-1 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
-                          <button onClick={() => onUpdate({...settings, timeFormat: '24h'})} className={`flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all ${settings.timeFormat === '24h' ? 'bg-white dark:bg-slate-600 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>24H</button>
-                          <button onClick={() => onUpdate({...settings, timeFormat: '12h'})} className={`flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all ${settings.timeFormat === '12h' ? 'bg-white dark:bg-slate-600 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>12H</button>
+                          <button onClick={() => onUpdate({...settings, timeFormat: '24h'})} className={`flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all ${settings.timeFormat === '24h' ? 'bg-white dark:bg-slate-600 text-violet-600 shadow-sm' : 'text-slate-400'}`}>24H</button>
+                          <button onClick={() => onUpdate({...settings, timeFormat: '12h'})} className={`flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all ${settings.timeFormat === '12h' ? 'bg-white dark:bg-slate-600 text-violet-600 shadow-sm' : 'text-slate-400'}`}>12H</button>
                       </div>
                   </div>
                   <div className="space-y-1">
                       <label className="text-[8px] font-bold text-slate-400 uppercase">Date Format</label>
                       <div className="flex gap-1 p-1 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
-                          <button onClick={() => onUpdate({...settings, dateFormat: 'DD/MM/YYYY'})} className={`flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all ${settings.dateFormat === 'DD/MM/YYYY' ? 'bg-white dark:bg-slate-600 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>DMY</button>
-                          <button onClick={() => onUpdate({...settings, dateFormat: 'MM/DD/YYYY'})} className={`flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all ${settings.dateFormat === 'MM/DD/YYYY' ? 'bg-white dark:bg-slate-600 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>MDY</button>
+                          <button onClick={() => onUpdate({...settings, dateFormat: 'DD/MM/YYYY'})} className={`flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all ${settings.dateFormat === 'DD/MM/YYYY' ? 'bg-white dark:bg-slate-600 text-violet-600 shadow-sm' : 'text-slate-400'}`}>DMY</button>
+                          <button onClick={() => onUpdate({...settings, dateFormat: 'MM/DD/YYYY'})} className={`flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all ${settings.dateFormat === 'MM/DD/YYYY' ? 'bg-white dark:bg-slate-600 text-violet-600 shadow-sm' : 'text-slate-400'}`}>MDY</button>
                       </div>
                   </div>
                 </div>
@@ -213,6 +226,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
                     onChange={val => onUpdate({...settings, defaultStartTime: val})} 
                     is12h={is12h}
                     icon={<Clock className="w-5 h-5" />}
+                    colorClass="text-violet-500"
                 />
                 <TimePickerField 
                     label={t.endTime} 
@@ -226,12 +240,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
 
             <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 transition-all">
                 <div className="flex items-center gap-3">
-                    <Utensils className="text-orange-500 w-5 h-5" />
+                    <Utensils className="text-violet-500 w-5 h-5" />
                     <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t.includeLunch}</span>
                 </div>
                 <button 
                   onClick={() => onUpdate({...settings, lunchEnabledDefault: !settings.lunchEnabledDefault})}
-                  className={`w-12 h-6 rounded-full transition-all relative ${settings.lunchEnabledDefault ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+                  className={`w-12 h-6 rounded-full transition-all relative ${settings.lunchEnabledDefault ? 'bg-violet-600' : 'bg-slate-300 dark:bg-slate-700'}`}
                 >
                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.lunchEnabledDefault ? 'left-7' : 'left-1'}`}></div>
                 </button>
@@ -243,6 +257,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
         id="rounding" 
         title={`${t.rounding} & ${t.overtime}`} 
         icon={Scale} 
+        themeColor="amber"
         isOpen={expandedSections.rounding} 
         onToggle={() => toggleSection('rounding')}
       >
@@ -254,7 +269,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
             </div>
             <button 
               onClick={() => onUpdate({...settings, roundingEnabled: !settings.roundingEnabled})}
-              className={`w-12 h-6 rounded-full transition-all relative ${settings.roundingEnabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+              className={`w-12 h-6 rounded-full transition-all relative ${settings.roundingEnabled ? 'bg-amber-600' : 'bg-slate-300 dark:bg-slate-700'}`}
             >
               <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.roundingEnabled ? 'left-7' : 'left-1'}`}></div>
             </button>
@@ -281,7 +296,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
             </div>
             <button 
               onClick={() => onUpdate({...settings, otEnabled: !settings.otEnabled})}
-              className={`w-12 h-6 rounded-full transition-all relative ${settings.otEnabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+              className={`w-12 h-6 rounded-full transition-all relative ${settings.otEnabled ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-700'}`}
             >
               <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.otEnabled ? 'left-7' : 'left-1'}`}></div>
             </button>
@@ -306,6 +321,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
         id="financials" 
         title={t.financials} 
         icon={DollarSign} 
+        themeColor="emerald"
         isOpen={expandedSections.financials} 
         onToggle={() => toggleSection('financials')}
       >
@@ -313,26 +329,26 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.hourlyRate}</label>
-                <input type="number" step="0.01" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-indigo-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.hourlyRate} onChange={e => onUpdate({...settings, hourlyRate: parseFloat(e.target.value) || 0})} />
+                <input type="number" step="0.01" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.hourlyRate} onChange={e => onUpdate({...settings, hourlyRate: parseFloat(e.target.value) || 0})} />
             </div>
             <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.holidayMultiplier}</label>
-                <input type="number" step="0.1" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-indigo-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.holidayRateMultiplier} onChange={e => onUpdate({...settings, holidayRateMultiplier: parseFloat(e.target.value) || 1.0})} />
+                <input type="number" step="0.1" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.holidayRateMultiplier} onChange={e => onUpdate({...settings, holidayRateMultiplier: parseFloat(e.target.value) || 1.0})} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.unpaidBreak}</label>
-                <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-indigo-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.unpaidBreakMinutes} onChange={e => onUpdate({...settings, unpaidBreakMinutes: parseInt(e.target.value) || 0})} />
+                <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.unpaidBreakMinutes} onChange={e => onUpdate({...settings, unpaidBreakMinutes: parseInt(e.target.value) || 0})} />
             </div>
             <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.weeklyGoal}</label>
-                <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-indigo-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.weeklyGoalHours} onChange={e => onUpdate({...settings, weeklyGoalHours: parseInt(e.target.value) || 40})} />
+                <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.weeklyGoalHours} onChange={e => onUpdate({...settings, weeklyGoalHours: parseInt(e.target.value) || 40})} />
             </div>
           </div>
           <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.holidayDefault}</label>
-              <input type="number" step="0.5" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 focus:border-indigo-500 transition-all outline-none font-bold text-slate-800 dark:text-slate-100" value={settings.holidayDefaultHours} onChange={e => onUpdate({...settings, holidayDefaultHours: parseFloat(e.target.value) || 8})} />
+              <input type="number" step="0.5" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 focus:border-emerald-500 transition-all outline-none font-bold text-slate-800 dark:text-slate-100" value={settings.holidayDefaultHours} onChange={e => onUpdate({...settings, holidayDefaultHours: parseFloat(e.target.value) || 8})} />
           </div>
         </div>
       </CollapsibleSection>
