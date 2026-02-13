@@ -1,6 +1,6 @@
 import React from 'react';
 import { TimeEntry, AppSettings } from '../types';
-import { calculateWorkHours, calculateEarnings, getLocalDateString, calculateOvertimeMinutes, getRoundedTimeRange, formatDisplayTime } from '../utils/timeUtils';
+import { calculateWorkHours, calculateEarnings, getLocalDateString, calculateOvertimeMinutes, getRoundedTimeRange, formatDisplayTime, formatDecimalToHuman } from '../utils/timeUtils';
 import { translations } from '../utils/translations';
 import { TrendingUp, Clock, Calendar, Briefcase, PlusCircle, Umbrella, Target, Wallet, ArrowUpRight, Zap } from 'lucide-react';
 
@@ -80,7 +80,6 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, settings, onAddClick, on
         </div>
         
         <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 rounded-[32px] p-7 text-white shadow-2xl shadow-indigo-200 dark:shadow-none relative overflow-hidden group">
-            {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-white/15 transition-all duration-700"></div>
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-400/20 rounded-full -ml-10 -mb-10 blur-2xl"></div>
             
@@ -92,12 +91,12 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, settings, onAddClick, on
                   </h3>
                   <div className="flex items-center gap-2 mt-2">
                     <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-bold backdrop-blur-sm border border-white/10">
-                      {stats.weekHours.toFixed(1)} {t.hrs}
+                      {stats.weekHours.toFixed(1)}h ({formatDecimalToHuman(stats.weekHours)})
                     </span>
                     {stats.weekOT > 0 && (
                       <span className="px-2 py-0.5 rounded-full bg-amber-500/30 text-[10px] font-black backdrop-blur-sm border border-amber-400/30 flex items-center gap-1">
                         <Zap className="w-2 h-2" />
-                        {stats.weekOT.toFixed(1)} {t.overtime}
+                        {stats.weekOT.toFixed(1)}h ({formatDecimalToHuman(stats.weekOT)})
                       </span>
                     )}
                     <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-bold backdrop-blur-sm border border-white/10">
@@ -134,14 +133,14 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, settings, onAddClick, on
           label={t.weeklyGoal} 
           value={`${settings.weeklyGoalHours}h`} 
           bgColor="bg-white dark:bg-slate-900" 
-          subValue={`${Math.max(0, settings.weeklyGoalHours - stats.weekHours).toFixed(1)}h remaining`}
+          subValue={`${formatDecimalToHuman(Math.max(0, settings.weeklyGoalHours - stats.weekHours))} remaining`}
         />
         <StatSmallCard 
           icon={<Calendar className="w-5 h-5 text-indigo-600" />} 
           label={t.avgDaily} 
-          value={`${(stats.weekHours / (stats.activeDays || 1)).toFixed(1)} h`} 
+          value={`${(stats.weekHours / (stats.activeDays || 1)).toFixed(1)}h`} 
           bgColor="bg-white dark:bg-slate-900" 
-          subValue={t.actualWeek}
+          subValue={formatDecimalToHuman(stats.weekHours / (stats.activeDays || 1))}
         />
       </div>
 
@@ -157,8 +156,8 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, settings, onAddClick, on
           {stats.recentActivity.length > 0 ? (
             stats.recentActivity.map(entry => {
               const otHours = calculateOvertimeMinutes(entry, settings) / 60;
+              const workHours = calculateWorkHours(entry, settings, true);
               
-              // Lógica de exibição de tempo arredondado vs real
               const roundedRange = settings.roundingEnabled ? getRoundedTimeRange(entry, settings) : null;
               const timeDisplay = roundedRange 
                 ? `${roundedRange.start} - ${roundedRange.end}` 
@@ -183,12 +182,12 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, settings, onAddClick, on
                     </p>
                     <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                     <p className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
-                      {calculateWorkHours(entry, settings, true).toFixed(1)}h
+                      {workHours.toFixed(1)}h ({formatDecimalToHuman(workHours)})
                     </p>
                     {otHours > 0 && (
                       <span className="flex items-center gap-0.5 text-[9px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-1 rounded">
                         <Zap className="w-2 h-2" />
-                        {otHours.toFixed(1)}
+                        {otHours.toFixed(1)}h
                       </span>
                     )}
                   </div>

@@ -15,6 +15,22 @@ const minutesToHHMM = (totalMinutes: number): string => {
 };
 
 /**
+ * Converte horas decimais para um formato amigável (ex: 0.3h -> 18min, 1.5h -> 1h 30m)
+ */
+export const formatDecimalToHuman = (hours: number): string => {
+  const totalMinutes = Math.round(hours * 60);
+  if (totalMinutes === 0) return '0min';
+  
+  if (totalMinutes < 60) {
+    return `${totalMinutes}min`;
+  }
+  
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+};
+
+/**
  * Retorna os horários exatos de Início e Fim que o sistema considerou para o cálculo de pagamento.
  */
 export const getRoundedTimeRange = (entry: TimeEntry, settings: AppSettings): { start: string, end: string } => {
