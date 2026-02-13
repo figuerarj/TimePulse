@@ -32,7 +32,7 @@ const CollapsibleSection: React.FC<{
   icon: any, 
   isOpen: boolean,
   onToggle: () => void,
-  themeColor?: 'indigo' | 'violet' | 'amber' | 'emerald',
+  themeColor?: 'indigo' | 'violet' | 'amber' | 'emerald' | 'blue',
   children: React.ReactNode 
 }> = ({ 
   title, 
@@ -47,9 +47,10 @@ const CollapsibleSection: React.FC<{
     violet: { text: 'text-violet-600', bg: 'bg-violet-50 dark:bg-violet-900/30', border: 'border-violet-100 dark:border-violet-900/40' },
     amber: { text: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-100 dark:border-amber-900/40' },
     emerald: { text: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-100 dark:border-emerald-900/40' },
+    blue: { text: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30', border: 'border-blue-100 dark:border-blue-900/40' },
   };
 
-  const colors = colorMap[themeColor];
+  const colors = colorMap[themeColor as keyof typeof colorMap] || colorMap.indigo;
 
   return (
     <section className="space-y-3">
@@ -269,7 +270,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
             </div>
             <button 
               onClick={() => onUpdate({...settings, roundingEnabled: !settings.roundingEnabled})}
-              className={`w-12 h-6 rounded-full transition-all relative ${settings.roundingEnabled ? 'bg-amber-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+              className={`w-12 h-6 rounded-full transition-all relative ${settings.roundingEnabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
             >
               <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.roundingEnabled ? 'left-7' : 'left-1'}`}></div>
             </button>
@@ -348,7 +349,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
           </div>
           <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.holidayDefault}</label>
-              <input type="number" step="0.5" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 focus:border-emerald-500 transition-all outline-none font-bold text-slate-800 dark:text-slate-100" value={settings.holidayDefaultHours} onChange={e => onUpdate({...settings, holidayDefaultHours: parseFloat(e.target.value) || 8})} />
+              <input type="number" step="0.5" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 focus:border-emerald-500 transition-all outline-none font-bold text-slate-800 dark:text-slate-100" value={settings.holidayDefaultHours} onChange={e => onUpdate({...settings, holidayDefaultHours: parseFloat(e.target.value) || 8})} />
           </div>
         </div>
       </CollapsibleSection>
