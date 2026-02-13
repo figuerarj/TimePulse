@@ -124,7 +124,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                              <TrendingUp className="w-3 h-3" />
                              {displayCurrency} {weekStats.earnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </p>
-                          <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+                          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
                              {weekStats.hours.toFixed(1)}h ({formatDecimalToHuman(weekStats.hours)}) Total
                           </p>
                         </div>
@@ -163,14 +163,17 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.roundedTime}</p>
                                     <p className="text-sm font-black text-slate-700 dark:text-slate-300">
-                                      {regularHours.toFixed(1)}h <span className="text-[11px] font-bold text-slate-400 opacity-80">({formatDecimalToHuman(regularHours)})</span>
+                                      {totalRoundedHours.toFixed(1)}h <span className="text-[11px] font-bold text-indigo-500 opacity-80">({formatDecimalToHuman(totalRoundedHours)})</span>
                                     </p>
                                     <p className="text-[10px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded mt-0.5 inline-block">
                                         {roundedRange.start} - {roundedRange.end}
                                     </p>
                                 </div>
                             </div>
-                            <p className="text-xs font-bold text-slate-500">{displayCurrency} {regularPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                            <div className="text-right">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5">{t.regular}: {regularHours.toFixed(1)}h ({formatDecimalToHuman(regularHours)})</p>
+                                <p className="text-xs font-bold text-slate-500">{displayCurrency} {totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                            </div>
                         </div>
 
                         {(otHours > 0 || settings.otEnabled) && (
@@ -190,7 +193,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                             </div>
                         )}
 
-                        <div className="flex items-center justify-between opacity-60">
+                        <div className="flex items-center justify-between opacity-60 pt-2 border-t border-slate-50 dark:border-slate-800">
                             <div className="flex items-center gap-2">
                                 <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-lg">
                                     <Clock className="w-3.5 h-3.5 text-slate-400" />
@@ -202,22 +205,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                                     </p>
                                 </div>
                             </div>
-                            <span className="text-[10px] font-medium text-slate-400">({realElapsedHours.toFixed(1)}h | {formatDecimalToHuman(realElapsedHours)})</span>
-                        </div>
-
-                        <div className="mt-2 pt-3 border-t border-slate-50 dark:border-slate-800 flex justify-between items-end">
-                            <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.breakdown}</p>
-                                <p className="text-[10px] font-bold text-indigo-500">
-                                    {displayCurrency} {regularPay.toFixed(2)} + {displayCurrency} {otPay.toFixed(2)}
-                                </p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Pay</p>
-                                <p className="text-xl font-black text-indigo-600 dark:text-indigo-400 tracking-tighter">
-                                    {displayCurrency} {totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                </p>
-                            </div>
+                            <span className="text-[10px] font-medium text-slate-400">{realElapsedHours.toFixed(1)}h ({formatDecimalToHuman(realElapsedHours)})</span>
                         </div>
 
                         {entry.notes && (

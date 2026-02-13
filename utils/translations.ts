@@ -95,7 +95,8 @@ export const translations = {
     otMultiplier: "OT Pay Multiplier",
     realTime: "Real Clock Input",
     roundedTime: "Rounded (Payroll)",
-    breakdown: "Pay Breakdown"
+    breakdown: "Pay Breakdown",
+    regular: "Regular"
   },
   pt: {
     hello: "Olá",
@@ -193,6 +194,7 @@ export const translations = {
     otMultiplier: "Multiplicador de Extras",
     realTime: "Real (Batida)",
     roundedTime: "Arredondado (Folha)",
-    breakdown: "Detalhamento de Pagamento"
+    breakdown: "Detalhamento de Pagamento",
+    regular: "Regular"
   }
 };
