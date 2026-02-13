@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 
 interface TimePickerFieldProps {
@@ -79,7 +78,7 @@ const TimePickerField: React.FC<TimePickerFieldProps> = ({
           {label}
         </label>
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 px-1 shadow-inner">
+          <div className="flex items-center bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 px-1 shadow-inner focus-within:ring-2 focus-within:ring-indigo-500/20">
             <input 
               type="text" 
               inputMode="numeric"
@@ -90,7 +89,10 @@ const TimePickerField: React.FC<TimePickerFieldProps> = ({
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, '').slice(0, 2);
                 setTempH(val);
-                if (val !== "") pushUpdate(val, tempM, ampm);
+                // Não enviamos o update para o pai se for vazio ou 0 temporário para evitar loops de render
+                if (val !== "") {
+                  pushUpdate(val, tempM, ampm);
+                }
               }}
               onBlur={() => {
                 let hh = parseInt(tempH);
@@ -111,7 +113,9 @@ const TimePickerField: React.FC<TimePickerFieldProps> = ({
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, '').slice(0, 2);
                 setTempM(val);
-                if (val !== "") pushUpdate(tempH, val, ampm);
+                if (val !== "") {
+                  pushUpdate(tempH, val, ampm);
+                }
               }}
               onBlur={() => {
                 const mm = parseInt(tempM) || 0;

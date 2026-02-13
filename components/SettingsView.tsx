@@ -25,11 +25,49 @@ interface SettingsViewProps {
   onImport: (data: { entries: TimeEntry[], settings: AppSettings }) => void;
 }
 
+// DEFINIÇÃO EXTERNA PARA EVITAR PERDA DE FOCO
+const CollapsibleSection: React.FC<{ 
+  id: string, 
+  title: any, 
+  icon: any, 
+  isOpen: boolean,
+  onToggle: () => void,
+  children: React.ReactNode 
+}> = ({ 
+  title, 
+  icon: Icon, 
+  isOpen,
+  onToggle,
+  children 
+}) => {
+  return (
+    <section className="space-y-3">
+      <button 
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-2 py-1 group active:opacity-70 transition-all"
+      >
+        <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 text-left">
+          <Icon className={`w-3.5 h-3.5 transition-colors ${isOpen ? 'text-indigo-600' : 'text-slate-400'}`} />
+          {title}
+        </h3>
+        <div className={`p-1 rounded-full transition-all ${isOpen ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-slate-300'}`}>
+          {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </div>
+      </button>
+      
+      <div className={`transition-all duration-300 overflow-hidden ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+        <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 p-6 shadow-sm mb-4">
+          {children}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate, onImport }) => {
   const t = translations[settings.language || 'en'];
   const is12h = settings.timeFormat === '12h';
   
-  // Estado para controlar quais seções estão expandidas
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     user: true,
     defaults: true,
@@ -94,45 +132,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
     reader.readAsText(file);
   };
 
-  // Componente Auxiliar para Seções Colapsáveis
-  // Fix: Use React.FC to properly handle children in the JSX transform and avoid missing prop errors.
-  // title is set to any because translations[lang] returns a generic object.
-  const CollapsibleSection: React.FC<{ 
-    id: string, 
-    title: any, 
-    icon: any, 
-    children: React.ReactNode 
-  }> = ({ 
-    id, 
-    title, 
-    icon: Icon, 
-    children 
-  }) => {
-    const isOpen = expandedSections[id];
-    return (
-      <section className="space-y-3">
-        <button 
-          onClick={() => toggleSection(id)}
-          className="w-full flex items-center justify-between px-2 py-1 group active:opacity-70 transition-all"
-        >
-          <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <Icon className={`w-3.5 h-3.5 transition-colors ${isOpen ? 'text-indigo-600' : 'text-slate-400'}`} />
-            {title}
-          </h3>
-          <div className={`p-1 rounded-full transition-all ${isOpen ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-slate-300'}`}>
-            {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </div>
-        </button>
-        
-        <div className={`transition-all duration-300 overflow-hidden ${isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 p-6 shadow-sm mb-4">
-            {children}
-          </div>
-        </div>
-      </section>
-    );
-  };
-
   return (
     <div className="p-6 space-y-6 pb-24">
       <div className="mb-2">
@@ -140,29 +139,52 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
         <p className="text-slate-500 dark:text-slate-400 text-sm italic">{t.customize}</p>
       </div>
 
-      <CollapsibleSection id="user" title={t.userProfile} icon={User}>
+      <CollapsibleSection 
+        id="user" 
+        title={t.userProfile} 
+        icon={User} 
+        isOpen={expandedSections.user} 
+        onToggle={() => toggleSection('user')}
+      >
         <div className="space-y-4">
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Your Name</label>
-            <input type="text" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-indigo-500 font-medium text-slate-800 dark:text-slate-100 transition-all" value={settings.userName} onChange={e => onUpdate({...settings, userName: e.target.value})} />
+            <input 
+              type="text" 
+              className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-indigo-500 font-medium text-slate-800 dark:text-slate-100 transition-all" 
+              value={settings.userName} 
+              onChange={e => onUpdate({...settings, userName: e.target.value})} 
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.language}</label>
                 <div className="flex gap-2">
-                    <button onClick={() => onUpdate({...settings, language: 'en'})} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${settings.language === 'en' ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border border-slate-100 dark:border-slate-700'}`}>EN</button>
-                    <button onClick={() => onUpdate({...settings, language: 'pt'})} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${settings.language === 'pt' ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border border-slate-100 dark:border-slate-700'}`}>PT</button>
+                    <button onClick={() => onUpdate({...settings, language: 'en'})} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${settings.language === 'en' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border border-slate-100 dark:border-slate-700'}`}>EN</button>
+                    <button onClick={() => onUpdate({...settings, language: 'pt'})} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${settings.language === 'pt' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border border-slate-100 dark:border-slate-700'}`}>PT</button>
                 </div>
             </div>
             <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.currencyCode}</label>
-                <input type="text" className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700 outline-none focus:border-indigo-500 font-bold text-center text-slate-800 dark:text-slate-100 transition-all" value={settings.currency} onChange={e => onUpdate({...settings, currency: e.target.value.toUpperCase()})} maxLength={3} />
+                <input 
+                  type="text" 
+                  className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700 outline-none focus:border-indigo-500 font-bold text-center text-slate-800 dark:text-slate-100 transition-all" 
+                  value={settings.currency} 
+                  onChange={e => onUpdate({...settings, currency: e.target.value.toUpperCase()})} 
+                  maxLength={3} 
+                />
             </div>
           </div>
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="defaults" title={t.defaults} icon={Layout}>
+      <CollapsibleSection 
+        id="defaults" 
+        title={t.defaults} 
+        icon={Layout} 
+        isOpen={expandedSections.defaults} 
+        onToggle={() => toggleSection('defaults')}
+      >
         <div className="space-y-5">
             <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Interface Format</label>
@@ -217,7 +239,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="rounding" title={`${t.rounding} & ${t.overtime}`} icon={Scale}>
+      <CollapsibleSection 
+        id="rounding" 
+        title={`${t.rounding} & ${t.overtime}`} 
+        icon={Scale} 
+        isOpen={expandedSections.rounding} 
+        onToggle={() => toggleSection('rounding')}
+      >
         <div className="space-y-4">
           <div className="flex items-center justify-between p-2">
             <div>
@@ -274,7 +302,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="financials" title={t.financials} icon={DollarSign}>
+      <CollapsibleSection 
+        id="financials" 
+        title={t.financials} 
+        icon={DollarSign} 
+        isOpen={expandedSections.financials} 
+        onToggle={() => toggleSection('financials')}
+      >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
