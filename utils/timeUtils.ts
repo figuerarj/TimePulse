@@ -105,7 +105,8 @@ export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings, forW
   let endTotal = realOut;
   if (endTotal < startTotal) endTotal += 1440;
 
-  if (forWage && settings.roundingEnabled) {
+  // For regular days with rounding enabled, we apply the shift-based rounding
+  if (forWage && settings.roundingEnabled && !entry.isHoliday) {
     const schedStart = parseToMinutes(entry.isCustomShift ? (entry.scheduledStartTime || settings.defaultStartTime) : settings.defaultStartTime);
     let schedEnd = parseToMinutes(entry.isCustomShift ? (entry.scheduledEndTime || settings.defaultEndTime) : settings.defaultEndTime);
     if (schedEnd < schedStart) schedEnd += 1440;
@@ -153,19 +154,24 @@ export const calculateOvertimeMinutes = (entry: TimeEntry, settings: AppSettings
   if (!settings.otEnabled) return 0;
   if (!entry.startTime || !entry.endTime || (entry.isHoliday && !entry.holidayWorked)) return 0;
 
-  const schedStart = parseToMinutes(entry.isCustomShift ? (entry.scheduledStartTime || settings.defaultStartTime) : settings.defaultStartTime);
-  let schedEnd = parseToMinutes(entry.isCustomShift ? (entry.scheduledEndTime || settings.defaultEndTime) : settings.defaultEndTime);
-  if (schedEnd < schedStart) schedEnd += 1440;
-
-  let realIn = parseToMinutes(entry.startTime);
-  let realOut = parseToMinutes(entry.endTime);
-  if (realOut < realIn) realOut += 1440;
-
-  // OT é estritamente o tempo após o fim previsto da escala
-  const diff = realOut - schedEnd;
+  // OT calculation based on duration exceeding the scheduled shift
+  const totalHours = calculateWorkHours(entry, settings, true);
   
-  if (diff >= (settings.otThresholdMinutes || 0)) {
-    return Math.max(0, diff);
+  let scheduledDuration = 0;
+  // If it's a holiday, we don't have a "scheduled" duration base as per user request
+  if (!entry.isHoliday) {
+    const sStart = parseToMinutes(entry.isCustomShift ? (entry.scheduledStartTime || settings.defaultStartTime) : settings.defaultStartTime);
+    let sEnd = parseToMinutes(entry.isCustomShift ? (entry.scheduledEndTime || settings.defaultEndTime) : settings.defaultEndTime);
+    if (sEnd < sStart) sEnd += 1440;
+    
+    const breakMin = entry.unpaidBreakMinutes !== undefined ? entry.unpaidBreakMinutes : (settings.unpaidBreakMinutes || 0);
+    scheduledDuration = Math.max(0, (sEnd - sStart - breakMin) / 60);
+  }
+
+  const diffMinutes = (totalHours - scheduledDuration) * 60;
+  
+  if (diffMinutes >= (settings.otThresholdMinutes || 0)) {
+    return Math.max(0, diffMinutes);
   }
   
   return 0;
