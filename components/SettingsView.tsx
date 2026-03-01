@@ -326,34 +326,30 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
         isOpen={expandedSections.financials} 
         onToggle={() => toggleSection('financials')}
       >
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.hourlyRate}</label>
-                <input type="number" step="0.01" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.hourlyRate} onChange={e => onUpdate({...settings, hourlyRate: parseFloat(e.target.value) || 0})} />
-            </div>
-            <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.holidayMultiplier}</label>
-                <input type="number" step="0.1" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.holidayRateMultiplier} onChange={e => onUpdate({...settings, holidayRateMultiplier: parseFloat(e.target.value) || 1.0})} />
-            </div>
-            <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.holidayWorkedRate}</label>
-                <input type="number" step="0.01" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.holidayWorkedRate} onChange={e => onUpdate({...settings, holidayWorkedRate: parseFloat(e.target.value) || 0})} />
-            </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.hourlyRate}</label>
+              <input type="number" step="0.01" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.hourlyRate} onChange={e => onUpdate({...settings, hourlyRate: parseFloat(e.target.value) || 0})} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.unpaidBreak}</label>
-                <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.unpaidBreakMinutes} onChange={e => onUpdate({...settings, unpaidBreakMinutes: parseInt(e.target.value) || 0})} />
-            </div>
-            <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.weeklyGoal}</label>
-                <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.weeklyGoalHours} onChange={e => onUpdate({...settings, weeklyGoalHours: parseInt(e.target.value) || 40})} />
-            </div>
+          <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.unpaidBreak}</label>
+              <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.unpaidBreakMinutes} onChange={e => onUpdate({...settings, unpaidBreakMinutes: parseInt(e.target.value) || 0})} />
+          </div>
+          <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.holidayMultiplier}</label>
+              <input type="number" step="0.1" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.holidayRateMultiplier} onChange={e => onUpdate({...settings, holidayRateMultiplier: parseFloat(e.target.value) || 1.0})} />
+          </div>
+          <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.holidayWorkedRate}</label>
+              <input type="number" step="0.01" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.holidayWorkedRate} onChange={e => onUpdate({...settings, holidayWorkedRate: parseFloat(e.target.value) || 0})} />
           </div>
           <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.holidayDefault}</label>
               <input type="number" step="0.5" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 focus:border-emerald-500 transition-all outline-none font-bold text-slate-800 dark:text-slate-100" value={settings.holidayDefaultHours} onChange={e => onUpdate({...settings, holidayDefaultHours: parseFloat(e.target.value) || 8})} />
+          </div>
+          <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.weeklyGoal}</label>
+              <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.weeklyGoalHours} onChange={e => onUpdate({...settings, weeklyGoalHours: parseInt(e.target.value) || 40})} />
           </div>
         </div>
       </CollapsibleSection>
