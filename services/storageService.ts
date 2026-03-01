@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   currency: 'USD',
   hourlyRate: 0,
   holidayRateMultiplier: 2.0,
+  holidayWorkedRate: 0,
   language: 'en',
   weeklyGoalHours: 40,
   theme: 'light',

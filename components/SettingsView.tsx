@@ -107,12 +107,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
   };
 
   const exportCSV = () => {
-    const headers = ['Date', 'Start Time', 'End Time', 'Lunch Start', 'Lunch End', 'Total Hours', 'Rate', 'Earnings', 'Notes', 'Holiday', 'Holiday Worked'];
+    const headers = ['Date', 'Start Time', 'End Time', 'Lunch Start', 'Lunch End', 'Total Hours', 'Rate', 'Earnings', 'Notes', 'Holiday'];
     const rows = entries.map(e => {
       const hours = calculateWorkHours(e, settings);
       const earnings = calculateEarnings(e, settings);
       const escapedNotes = `"${(e.notes || '').replace(/"/g, '""')}"`;
-      return [e.date, e.startTime, e.endTime, e.lunchStart, e.lunchEnd, hours.toFixed(2), e.hourlyRate ?? settings.hourlyRate, earnings.toFixed(2), escapedNotes, e.isHoliday, e.holidayWorked].join(',');
+      return [e.date, e.startTime, e.endTime, e.lunchStart, e.lunchEnd, hours.toFixed(2), e.hourlyRate ?? settings.hourlyRate, earnings.toFixed(2), escapedNotes, e.isHoliday].join(',');
     });
     const csvContent = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -335,6 +335,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, entries, onUpdate
             <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.holidayMultiplier}</label>
                 <input type="number" step="0.1" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.holidayRateMultiplier} onChange={e => onUpdate({...settings, holidayRateMultiplier: parseFloat(e.target.value) || 1.0})} />
+            </div>
+            <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.holidayWorkedRate}</label>
+                <input type="number" step="0.01" className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 outline-none focus:border-emerald-500 font-bold text-slate-800 dark:text-slate-100 transition-all" value={settings.holidayWorkedRate} onChange={e => onUpdate({...settings, holidayWorkedRate: parseFloat(e.target.value) || 0})} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">

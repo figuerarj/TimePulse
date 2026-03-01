@@ -92,74 +92,71 @@ export const getRoundedTimeRange = (entry: TimeEntry, settings: AppSettings): { 
 };
 
 export const calculateWorkHours = (entry: TimeEntry, settings: AppSettings, forWage: boolean = false): number => {
-  if (entry.isHoliday && !entry.holidayWorked) {
-    return settings.holidayDefaultHours || 0;
-  }
+  let workedHours = 0;
 
-  if (!entry.startTime || !entry.endTime) return 0;
-  
-  const realIn = parseToMinutes(entry.startTime);
-  const realOut = parseToMinutes(entry.endTime);
-  
-  let startTotal = realIn;
-  let endTotal = realOut;
-  if (endTotal < startTotal) endTotal += 1440;
-
-  // For regular days with rounding enabled, we apply the shift-based rounding
-  if (forWage && settings.roundingEnabled && !entry.isHoliday) {
-    const schedStart = parseToMinutes(entry.isCustomShift ? (entry.scheduledStartTime || settings.defaultStartTime) : settings.defaultStartTime);
-    let schedEnd = parseToMinutes(entry.isCustomShift ? (entry.scheduledEndTime || settings.defaultEndTime) : settings.defaultEndTime);
-    if (schedEnd < schedStart) schedEnd += 1440;
-
-    /**
-     * REGRA DE ENTRADA: max(realIn, scheduledIn)
-     * Ignora tempo antes do turno começar.
-     */
-    startTotal = Math.max(realIn, schedStart);
-
-    // Se houver atraso, aplica a margem de arredondamento de entrada
-    if (startTotal > schedStart) {
-      const delay = startTotal - schedStart;
-      if (delay <= (settings.clockInRoundingMinutes || 0)) {
-        startTotal = schedStart;
-      }
-    }
-
-    /**
-     * REGRA DE SAÍDA: Arredonda para o previsto se dentro da margem
-     */
-    if (endTotal < schedEnd) {
-      if (schedEnd - endTotal <= (settings.clockOutRoundingMinutes || 0)) {
-        endTotal = schedEnd;
-      }
-    } else {
-      if (endTotal - schedEnd <= (settings.clockOutRoundingMinutes || 0)) {
-        endTotal = schedEnd;
-      }
-    }
-  }
-  
-  let totalMinutes = endTotal - startTotal;
-  if (totalMinutes < 0) totalMinutes += 1440;
-
-  const breakMinutes = entry.unpaidBreakMinutes !== undefined 
-    ? entry.unpaidBreakMinutes 
-    : (Number(settings.unpaidBreakMinutes) || 0);
+  if (entry.startTime && entry.endTime) {
+    const realIn = parseToMinutes(entry.startTime);
+    const realOut = parseToMinutes(entry.endTime);
     
-  totalMinutes -= breakMinutes;
-  return Math.max(0, totalMinutes / 60);
+    let startTotal = realIn;
+    let endTotal = realOut;
+    if (endTotal < startTotal) endTotal += 1440;
+
+    // For regular days with rounding enabled, we apply the shift-based rounding
+    if (forWage && settings.roundingEnabled && !entry.isHoliday) {
+      const schedStart = parseToMinutes(entry.isCustomShift ? (entry.scheduledStartTime || settings.defaultStartTime) : settings.defaultStartTime);
+      let schedEnd = parseToMinutes(entry.isCustomShift ? (entry.scheduledEndTime || settings.defaultEndTime) : settings.defaultEndTime);
+      if (schedEnd < schedStart) schedEnd += 1440;
+
+      startTotal = Math.max(realIn, schedStart);
+
+      if (startTotal > schedStart) {
+        const delay = startTotal - schedStart;
+        if (delay <= (settings.clockInRoundingMinutes || 0)) {
+          startTotal = schedStart;
+        }
+      }
+
+      if (endTotal < schedEnd) {
+        if (schedEnd - endTotal <= (settings.clockOutRoundingMinutes || 0)) {
+          endTotal = schedEnd;
+        }
+      } else {
+        if (endTotal - schedEnd <= (settings.clockOutRoundingMinutes || 0)) {
+          endTotal = schedEnd;
+        }
+      }
+    }
+    
+    let totalMinutes = endTotal - startTotal;
+    if (totalMinutes < 0) totalMinutes += 1440;
+
+    const breakMinutes = entry.unpaidBreakMinutes !== undefined 
+      ? entry.unpaidBreakMinutes 
+      : (Number(settings.unpaidBreakMinutes) || 0);
+      
+    totalMinutes -= breakMinutes;
+    workedHours = Math.max(0, totalMinutes / 60);
+  }
+
+  // Holiday Pay (8h) is added to the total hours if enabled
+  const holidayBase = (entry.isHoliday && entry.holidayPay) ? (settings.holidayDefaultHours || 0) : 0;
+  
+  return workedHours + holidayBase;
 };
 
 export const calculateOvertimeMinutes = (entry: TimeEntry, settings: AppSettings): number => {
   if (!settings.otEnabled) return 0;
-  if (!entry.startTime || !entry.endTime || (entry.isHoliday && !entry.holidayWorked)) return 0;
+  if (!entry.startTime || !entry.endTime) return 0;
 
   // OT calculation based on duration exceeding the scheduled shift
   const totalHours = calculateWorkHours(entry, settings, true);
+  const holidayBase = (entry.isHoliday && entry.holidayPay) ? (settings.holidayDefaultHours || 0) : 0;
+  const workedHours = Math.max(0, totalHours - holidayBase);
   
   let scheduledDuration = 0;
-  // If it's a holiday, we don't have a "scheduled" duration base as per user request
-  if (!entry.isHoliday) {
+  // If it's a holiday worked, all worked hours are OT as per user request
+  if (!entry.isHoliday || !entry.holidayWorked) {
     const sStart = parseToMinutes(entry.isCustomShift ? (entry.scheduledStartTime || settings.defaultStartTime) : settings.defaultStartTime);
     let sEnd = parseToMinutes(entry.isCustomShift ? (entry.scheduledEndTime || settings.defaultEndTime) : settings.defaultEndTime);
     if (sEnd < sStart) sEnd += 1440;
@@ -168,7 +165,7 @@ export const calculateOvertimeMinutes = (entry: TimeEntry, settings: AppSettings
     scheduledDuration = Math.max(0, (sEnd - sStart - breakMin) / 60);
   }
 
-  const diffMinutes = (totalHours - scheduledDuration) * 60;
+  const diffMinutes = (workedHours - scheduledDuration) * 60;
   
   if (diffMinutes >= (settings.otThresholdMinutes || 0)) {
     return Math.max(0, diffMinutes);
@@ -178,22 +175,38 @@ export const calculateOvertimeMinutes = (entry: TimeEntry, settings: AppSettings
 };
 
 export const calculateEarnings = (entry: TimeEntry, settings: AppSettings): number => {
-  const totalRoundedHours = calculateWorkHours(entry, settings, true);
+  const baseRate = entry.hourlyRate ?? settings.hourlyRate;
+  const holidayBaseHours = (entry.isHoliday && entry.holidayPay) ? (settings.holidayDefaultHours || 0) : 0;
+  const holidayPay = holidayBaseHours * baseRate;
+
+  const totalHours = calculateWorkHours(entry, settings, true);
+  const workedHours = Math.max(0, totalHours - holidayBaseHours);
+  
   const otMinutes = calculateOvertimeMinutes(entry, settings);
   const otHours = otMinutes / 60;
   
-  const regularHours = Math.max(0, totalRoundedHours - otHours);
-  const baseRate = entry.hourlyRate ?? settings.hourlyRate;
+  const regularWorkedHours = Math.max(0, workedHours - otHours);
   
   let rate = baseRate;
+  // If it's a holiday worked, we use the specific holiday worked rate if set, 
+  // otherwise fallback to the multiplier logic.
   if (entry.isHoliday && entry.holidayWorked) {
-    rate = baseRate * (settings.holidayRateMultiplier || 1);
+    if (settings.holidayWorkedRate > 0) {
+      rate = settings.holidayWorkedRate;
+    } else if (!settings.otEnabled) {
+      // Only apply multiplier here if OT is disabled, otherwise OT logic handles it
+      rate = baseRate * (settings.holidayRateMultiplier || 1);
+    }
   }
 
-  const regularPay = regularHours * rate;
-  const otPay = otHours * (rate * (settings.otRateMultiplier || 1.5));
+  const regularPay = regularWorkedHours * rate;
   
-  return regularPay + otPay;
+  // For OT pay on holidays, if a specific holiday rate is set, we might want to use it 
+  // or apply the OT multiplier to it. Usually, OT on holidays is baseRate * otMultiplier.
+  // We'll stick to the existing OT logic but allow the holiday rate to influence regular hours.
+  const otPay = otHours * (baseRate * (settings.otRateMultiplier || 1.5));
+  
+  return holidayPay + regularPay + otPay;
 };
 
 export const formatDisplayTime = (timeStr: string, format: '24h' | '12h'): string => {

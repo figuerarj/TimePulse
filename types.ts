@@ -13,6 +13,7 @@ export interface TimeEntry {
   unpaidBreakMinutes?: number; 
   isHoliday: boolean;
   holidayWorked: boolean;
+  holidayPay: boolean;
   lunchEnabled: boolean;
 }
 
@@ -24,6 +25,7 @@ export interface AppSettings {
   currency: string;
   hourlyRate: number;
   holidayRateMultiplier: number;
+  holidayWorkedRate: number;
   language: 'en' | 'pt';
   weeklyGoalHours: number;
   theme: 'light' | 'dark';

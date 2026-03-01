@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, Calendar, Clock, FileText, DollarSign, Umbrella, Utensils, Briefcase, Zap, AlertCircle, ListChecks } from 'lucide-react';
+import { X, Check, Calendar, Clock, FileText, DollarSign, Umbrella, Utensils, Zap, AlertCircle, ListChecks } from 'lucide-react';
 import { TimeEntry, AppSettings } from '../types';
 import { getSmartLunchTime, getLocalDateString } from '../utils/timeUtils';
 import { translations } from '../utils/translations';
@@ -18,6 +18,8 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onSave, 
   const is12h = settings.timeFormat === '12h';
   const [error, setError] = useState<string | null>(null);
 
+  const [showHolidayOptions, setShowHolidayOptions] = useState(false);
+
   const [formData, setFormData] = useState<Partial<TimeEntry>>({
     id: '',
     date: getLocalDateString(),
@@ -33,6 +35,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onSave, 
     unpaidBreakMinutes: settings.unpaidBreakMinutes,
     isHoliday: false,
     holidayWorked: false,
+    holidayPay: false,
     lunchEnabled: settings.lunchEnabledDefault
   });
 
@@ -44,7 +47,9 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onSave, 
         unpaidBreakMinutes: initialData.unpaidBreakMinutes ?? settings.unpaidBreakMinutes,
         scheduledStartTime: initialData.scheduledStartTime || settings.defaultStartTime,
         scheduledEndTime: initialData.scheduledEndTime || settings.defaultEndTime,
-        isCustomShift: initialData.isCustomShift || false
+        isCustomShift: initialData.isCustomShift || false,
+        holidayPay: initialData.holidayPay || false,
+        holidayWorked: initialData.holidayWorked || false
       });
     } else {
         const smartLunch = getSmartLunchTime(settings.defaultStartTime, settings.defaultEndTime);
@@ -64,13 +69,26 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onSave, 
             unpaidBreakMinutes: settings.unpaidBreakMinutes,
             isHoliday: false,
             holidayWorked: false,
+            holidayPay: false,
             lunchEnabled: settings.lunchEnabledDefault
         }));
+        setShowHolidayOptions(false);
     }
   }, [initialData, settings]);
 
+  const toggleHoliday = () => {
+    const newIsHoliday = !formData.isHoliday;
+    setFormData({
+      ...formData,
+      isHoliday: newIsHoliday,
+      holidayPay: newIsHoliday ? formData.holidayPay : false,
+      holidayWorked: newIsHoliday ? formData.holidayWorked : false
+    });
+    setShowHolidayOptions(newIsHoliday);
+  };
+
   const validate = () => {
-    if (!formData.isHoliday || formData.holidayWorked) {
+    if (!formData.isHoliday) {
         if (formData.startTime === formData.endTime) {
             setError(settings.language === 'pt' ? "Início e fim não podem ser iguais" : "Start and end times cannot be equal");
             return false;
@@ -97,7 +115,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onSave, 
     });
   };
 
-  const showTimeFields = !formData.isHoliday || formData.holidayWorked;
+  const showTimeFields = true;
 
   return (
     <div 
@@ -108,10 +126,20 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onSave, 
     >
       <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[40px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-500">
         <div className="px-8 pt-10 pb-8 max-h-[90vh] overflow-y-auto no-scrollbar">
-          <div className="flex justify-between items-center mb-6">
-            <h2 id="modal-title" className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-              {initialData ? t.editEntry : t.newEntry}
-            </h2>
+            <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-3">
+              <h2 id="modal-title" className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                {initialData ? t.editEntry : t.newEntry}
+              </h2>
+              <button 
+                type="button"
+                onClick={toggleHoliday}
+                className={`p-2 rounded-xl border transition-all ${formData.isHoliday ? 'bg-orange-500 border-orange-500 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-200'}`}
+                title={t.holiday}
+              >
+                <Umbrella className="w-5 h-5" />
+              </button>
+            </div>
             <button 
               onClick={onClose} 
               aria-label="Fechar modal"
@@ -121,33 +149,55 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onSave, 
             </button>
           </div>
 
-          {error && (
-            <div className="mb-4 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center gap-3 text-rose-600 dark:text-rose-400 animate-in zoom-in-95">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <p className="text-sm font-bold">{error}</p>
+          {showHolidayOptions && (
+            <div className="mb-6 p-5 bg-orange-50 dark:bg-orange-900/10 rounded-[32px] border border-orange-100 dark:border-orange-800 space-y-4 animate-in zoom-in-95 duration-300 shadow-sm">
+              <div className="flex items-center gap-2 px-1 text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">
+                <Umbrella className="w-3 h-3" />
+                {t.holiday}
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                <label className="flex items-center gap-3 cursor-pointer group bg-white/50 dark:bg-white/5 p-3 rounded-2xl border border-orange-100/50 dark:border-orange-800/50 hover:bg-white transition-colors">
+                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${formData.holidayPay ? 'bg-orange-500 border-orange-500 shadow-sm' : 'border-slate-300 dark:border-slate-600'}`}>
+                    {formData.holidayPay && <Check className="w-4 h-4 text-white" />}
+                  </div>
+                  <input 
+                    type="checkbox" 
+                    className="hidden" 
+                    checked={formData.holidayPay} 
+                    onChange={() => {
+                      const newVal = !formData.holidayPay;
+                      setFormData({ ...formData, holidayPay: newVal });
+                    }} 
+                  />
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{t.holidayPay}</span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer group bg-white/50 dark:bg-white/5 p-3 rounded-2xl border border-orange-100/50 dark:border-orange-800/50 hover:bg-white transition-colors">
+                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${formData.holidayWorked ? 'bg-orange-500 border-orange-500 shadow-sm' : 'border-slate-300 dark:border-slate-600'}`}>
+                    {formData.holidayWorked && <Check className="w-4 h-4 text-white" />}
+                  </div>
+                  <input 
+                    type="checkbox" 
+                    className="hidden" 
+                    checked={formData.holidayWorked} 
+                    onChange={() => {
+                      const newVal = !formData.holidayWorked;
+                      setFormData({ ...formData, holidayWorked: newVal });
+                    }} 
+                  />
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{t.holidayWorked}</span>
+                </label>
+              </div>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="flex gap-3">
-              <button 
-                type="button"
-                onClick={() => setFormData({...formData, isHoliday: !formData.isHoliday, holidayWorked: false})}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border transition-all font-bold text-sm ${formData.isHoliday ? 'bg-orange-500 border-orange-500 text-white shadow-lg' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500'}`}
-              >
-                <Umbrella className="w-4 h-4" />
-                {t.holiday}
-              </button>
-              <button 
-                type="button"
-                disabled={!formData.isHoliday}
-                onClick={() => setFormData({...formData, holidayWorked: !formData.holidayWorked})}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border transition-all font-bold text-sm ${!formData.isHoliday ? 'opacity-30 cursor-not-allowed' : ''} ${formData.holidayWorked ? 'bg-amber-600 border-amber-600 text-white shadow-lg' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500'}`}
-              >
-                <Briefcase className="w-4 h-4" />
-                {t.holidayWorked}
-              </button>
-            </div>
+            {error && (
+              <div className="mb-4 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center gap-3 text-rose-600 dark:text-rose-400 animate-in zoom-in-95">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <p className="text-sm font-bold">{error}</p>
+              </div>
+            )}
 
             <div className="space-y-4">
               <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 focus-within:border-indigo-500 transition-all">

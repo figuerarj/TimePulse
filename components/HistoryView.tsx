@@ -145,11 +145,25 @@ const HistoryView: React.FC<HistoryViewProps> = ({ entries, settings, onEdit, on
                           )}
                         </div>
                         <div className="flex gap-1">
-                          <button onClick={() => onEdit(entry)} className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all active:scale-90">
-                            <Edit2 className="w-4 h-4" />
+                          <button 
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEdit(entry);
+                            }} 
+                            className="p-3 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all active:scale-90"
+                          >
+                            <Edit2 className="w-5 h-5" />
                           </button>
-                          <button onClick={() => onDelete(entry.id)} className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all active:scale-90">
-                            <Trash2 className="w-4 h-4" />
+                          <button 
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete(entry.id);
+                            }} 
+                            className="p-3 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all active:scale-90"
+                          >
+                            <Trash2 className="w-5 h-5" />
                           </button>
                         </div>
                       </div>

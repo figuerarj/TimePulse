@@ -18,6 +18,7 @@ import HistoryView from './components/HistoryView';
 import StatsView from './components/StatsView';
 import SettingsView from './components/SettingsView';
 import AddEntryModal from './components/AddEntryModal';
+import ConfirmModal from './components/ConfirmModal';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
@@ -25,6 +26,7 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<AppSettings>(storageService.getSettings());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const t = translations[settings.language || 'en'];
 
@@ -69,10 +71,17 @@ const App: React.FC = () => {
   };
 
   const handleDeleteEntry = (id: string) => {
-    if (!window.confirm(t.confirmDelete)) return;
-    const newEntries = entries.filter(e => e.id !== id);
-    setEntries(newEntries);
-    storageService.saveEntries(newEntries);
+    setDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteId) return;
+    setEntries(prev => {
+      const newEntries = prev.filter(e => e.id !== deleteId);
+      storageService.saveEntries(newEntries);
+      return newEntries;
+    });
+    setDeleteId(null);
   };
 
   const handleUpdateSettings = (newSettings: AppSettings) => {
@@ -180,6 +189,16 @@ const App: React.FC = () => {
           initialData={editingEntry || undefined}
         />
       )}
+
+      <ConfirmModal 
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={confirmDelete}
+        title={settings.language === 'pt' ? 'Excluir Registro' : 'Delete Entry'}
+        message={t.confirmDelete}
+        confirmText={settings.language === 'pt' ? 'Excluir' : 'Delete'}
+        cancelText={settings.language === 'pt' ? 'Cancelar' : 'Cancel'}
+      />
     </div>
   );
 };
